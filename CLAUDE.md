@@ -1,4 +1,4 @@
-# skill-hooks
+# Hooks
 
 TypeScript tooling for Claude Code skills.
 

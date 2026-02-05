@@ -14,8 +14,8 @@ Thanks for your interest in contributing to Claude Code Skills.
 
 ```bash
 # Clone the repo
-git clone https://github.com/4meta5/skills.git
-cd skills
+git clone https://github.com/4meta5/hooks.git
+cd hooks
 
 # Install dependencies
 npm install
