@@ -23,8 +23,7 @@
     "test:all": "vitest run && vitest run --config vitest.property.config.ts",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
-    "sync-skills": "bash scripts/sync-skills.sh",
-    "prepublishOnly": "npm run sync-skills && npm run build",
+    "prepublishOnly": "npm run build",
     "precommit": "npm run typecheck && npm test"
   },
   "keywords": [

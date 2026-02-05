@@ -163,6 +163,16 @@ Items explicitly deferred to focus on the core loop (scan → install → auto-e
 
 ### 2026-02-05
 
+**Codebase Audit: Fix Broken References and Failing Tests**
+- [x] Removed broken `sync-skills` npm script from packages/skills/package.json (script deleted but referenced)
+- [x] Fixed `prepublishOnly` hook to not depend on deleted script
+- [x] Updated packages/skills/.gitignore to remove stale comment referencing deleted script
+- [x] Fixed 4 failing tests in packages/cli/src/commands/add.test.ts (tests assumed bundled skills exist)
+- [x] Tests now create local skills instead of depending on bundled infrastructure
+- [x] Added `createLocalSkill` helper and `withCwd` pattern to test setup
+- [x] Cleaned 4 slop artifacts from temp directories
+- [x] All 1,377 tests passing across all packages
+
 **Skills Cleanup: Flatten Structure and Remove Deleted Skills**
 - [x] Removed 9 skills (agent-orchestration, bluebubbles-setup, claudeception, imessage-tone, monorepo-readme, pr-description, project-init, research-to-plan, typescript-circular-dependency)
 - [x] Merged typescript-circular-dependency content into code-review-ts skill
