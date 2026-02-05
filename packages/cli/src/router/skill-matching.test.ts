@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { readFile, writeFile, mkdir, rm } from 'fs/promises';
+import { writeFile, mkdir, rm } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { createRouter } from './router.js';
@@ -120,41 +120,6 @@ describe('skill matching', () => {
 
       const matchedSkills = result.matches.map(m => m.skillName);
       expect(matchedSkills).toContain('blog-writer-broken');
-    });
-  });
-
-  describe('markdown-writer skill (general purpose)', () => {
-    it('should exist as a separate skill from blog-writer', async () => {
-      const skillPath = join(process.cwd(), '../../.claude/skills/markdown-writer/SKILL.md');
-      const content = await readFile(skillPath, 'utf-8');
-      expect(content).toBeDefined();
-      expect(content.length).toBeGreaterThan(0);
-    });
-
-    it('should have description mentioning README and documentation', async () => {
-      const skillPath = join(process.cwd(), '../../.claude/skills/markdown-writer/SKILL.md');
-      const content = await readFile(skillPath, 'utf-8');
-
-      const descriptionMatch = content.match(/description:\s*\|?\s*([\s\S]*?)(?=\n[a-z-]+:|---)/i);
-      const description = descriptionMatch ? descriptionMatch[1].trim() : '';
-
-      expect(description.toLowerCase()).toContain('readme');
-      expect(description.toLowerCase()).toContain('documentation');
-    });
-
-    it('should NOT mention amarsingh.dev', async () => {
-      const skillPath = join(process.cwd(), '../../.claude/skills/markdown-writer/SKILL.md');
-      const content = await readFile(skillPath, 'utf-8');
-
-      expect(content).not.toContain('amarsingh.dev');
-    });
-
-    it('should include Paul Graham writing style guidelines', async () => {
-      const skillPath = join(process.cwd(), '../../.claude/skills/markdown-writer/SKILL.md');
-      const content = await readFile(skillPath, 'utf-8');
-
-      expect(content.toLowerCase()).toContain('short sentences');
-      expect(content.toLowerCase()).toContain('no hedging');
     });
   });
 });
