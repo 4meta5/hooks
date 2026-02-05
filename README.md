@@ -12,10 +12,7 @@ TypeScript tooling for Claude Code skills: CLI, library, chain system, and hooks
 | `@4meta5/skills` | Core skills library | [![npm](https://img.shields.io/npm/v/@4meta5/skills)](https://npmjs.com/package/@4meta5/skills) |
 | `@4meta5/skills-cli` | CLI for discovering and installing skills | [![npm](https://img.shields.io/npm/v/@4meta5/skills-cli)](https://npmjs.com/package/@4meta5/skills-cli) |
 | `@4meta5/skill-loader` | Skill loading and parsing utilities | [![npm](https://img.shields.io/npm/v/@4meta5/skill-loader)](https://npmjs.com/package/@4meta5/skill-loader) |
-| `@4meta5/skill-installer` | Skill installation logic | [![npm](https://img.shields.io/npm/v/@4meta5/skill-installer)](https://npmjs.com/package/@4meta5/skill-installer) |
-| `@4meta5/skill-sources` | Curated skill sources | [![npm](https://img.shields.io/npm/v/@4meta5/skill-sources)](https://npmjs.com/package/@4meta5/skill-sources) |
-| `@4meta5/skill-chain` | Skill chaining system | [![npm](https://img.shields.io/npm/v/@4meta5/skill-chain)](https://npmjs.com/package/@4meta5/skill-chain) |
-| `@4meta5/skill-validator` | Skill validation and quality checks | [![npm](https://img.shields.io/npm/v/@4meta5/skill-validator)](https://npmjs.com/package/@4meta5/skill-validator) |
+| `@4meta5/chain` | Skill chaining and workflow enforcement | [![npm](https://img.shields.io/npm/v/@4meta5/chain)](https://npmjs.com/package/@4meta5/chain) |
 
 ## Quick Start
 
