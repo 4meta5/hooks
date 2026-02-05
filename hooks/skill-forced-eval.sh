@@ -44,8 +44,12 @@ For each installed skill, state: [skill-name] - YES/NO - [reason]
 
 Installed skills to evaluate:
 - tdd: Trigger = implementing features, fixing bugs, refactoring code (RED→GREEN→REFACTOR)
-- no-workarounds: Trigger = building tools, CLI features, automation
-- dogfood-skills: Trigger = completing features in skills-cli
+- dogfood: Trigger = completing features, testing the CLI you're building
+- code-review-ts: Trigger = reviewing TypeScript code changes
+- differential-review: Trigger = reviewing PRs, security-focused code review
+- refactor-suggestions: Trigger = suggesting code improvements
+- repo-hygiene: Trigger = updating docs, cleaning up, pre-merge checks
+- rick-rubin: Trigger = reflecting on approach, scope discipline, simplicity
 
 ### Step 2 - ACTIVATE (do this immediately after Step 1):
 IF any skills are YES → Use Skill(skill-name) tool for EACH relevant skill NOW
@@ -63,8 +67,8 @@ Only after Step 2 is complete, proceed with implementation.
 ## BLOCKING CONDITIONS - NO EXCEPTIONS
 
 - If tdd = YES: You are BLOCKED until Phase 1 (RED) is complete - failing test required
-- If no-workarounds = YES: You are BLOCKED from manual workarounds
-- Skills CHAIN: If both tdd AND no-workarounds are YES, follow BOTH
+- If dogfood = YES: You MUST test with the CLI after completing features
+- Skills CHAIN: Multiple YES skills should ALL be followed
 
 This activation sequence is MANDATORY. Skipping Step 2 violates project policy.
 

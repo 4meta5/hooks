@@ -400,47 +400,6 @@ Some project documentation.
       }
     });
 
-    it('should sync bundled skills that exist in library but not in local .claude/skills', async () => {
-      const { syncCommand } = await import('./sync.js');
-
-      // Create a target project that has a skill installed
-      const targetProject = await mkdtemp(join(tmpdir(), 'skills-target-'));
-      const bundledSkillName = 'code-review'; // This exists in packages/skills-library/skills/
-
-      await mkdir(join(targetProject, '.claude', 'skills', bundledSkillName), { recursive: true });
-      await writeFile(
-        join(targetProject, '.claude', 'skills', bundledSkillName, 'SKILL.md'),
-        `---\nname: ${bundledSkillName}\ndescription: Old version\n---\n\n# Old content`,
-        'utf-8'
-      );
-      await trackProjectInstallation(targetProject, bundledSkillName, 'skill');
-
-      // Create source directory WITHOUT the bundled skill in .claude/skills/
-      // The skill only exists in the bundled library (packages/skills-library/skills/)
-      const sourceDir = await mkdtemp(join(tmpdir(), 'skills-source-'));
-      await mkdir(join(sourceDir, '.claude', 'skills'), { recursive: true });
-      // Note: bundledSkillName is NOT in sourceDir/.claude/skills/
-      // But it SHOULD be found in the bundled skills library
-
-      try {
-        // Sync should work because the skill exists in bundled library
-        // This currently crashes with ENOENT because it tries to copy from .claude/skills/
-        await expect(syncCommand([bundledSkillName], { cwd: sourceDir })).resolves.not.toThrow();
-
-        // Verify the skill was synced from the bundled library
-        const content = await readFile(
-          join(targetProject, '.claude', 'skills', bundledSkillName, 'SKILL.md'),
-          'utf-8'
-        );
-        // The bundled skill has different content than our "Old content"
-        expect(content).not.toContain('Old content');
-      } finally {
-        await untrackProjectInstallation(targetProject, bundledSkillName, 'skill');
-        await rm(targetProject, { recursive: true, force: true });
-        await rm(sourceDir, { recursive: true, force: true });
-      }
-    });
-
     it('should gracefully skip skills that do not exist in source', async () => {
       const { syncCommand } = await import('./sync.js');
 

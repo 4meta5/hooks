@@ -13,17 +13,7 @@ import {
 // Mock the skills library
 vi.mock('@4meta5/skills', () => ({
   createSkillsLibrary: () => ({
-    loadSkill: vi.fn().mockImplementation(async (name: string) => {
-      // Return mock skills for bundled skills
-      if (name === 'code-review-rust' || name === 'code-review-ts') {
-        return {
-          metadata: { name, description: `Mock ${name} skill` },
-          content: '',
-          path: `/bundled/${name}`
-        };
-      }
-      throw new Error(`Skill not found: ${name}`);
-    }),
+    loadSkill: vi.fn().mockRejectedValue(new Error('Skill not found')),
     listSkills: vi.fn().mockResolvedValue([])
   })
 }));
@@ -70,29 +60,34 @@ function createTech(
 
 describe('Skill Matcher', () => {
   describe('matchSkills', () => {
-    it('matches Rust code review skill for Rust projects', async () => {
-      const analysis = createAnalysis({
-        languages: [createTech('Rust', 'language', ['rust', 'cargo'])]
-      });
-
-      const result = await matchSkills(analysis);
-
-      expect(result.high.length + result.medium.length + result.low.length).toBeGreaterThan(0);
-      const rustSkill = getAllRecommendations(result).find(r => r.name === 'code-review-rust');
-      expect(rustSkill).toBeDefined();
-      expect(rustSkill!.source).toBe('bundled');
-    });
-
-    it('matches TypeScript code review skill for TS projects', async () => {
+    it('matches skills for TypeScript projects from curated sources', async () => {
       const analysis = createAnalysis({
         languages: [createTech('TypeScript', 'language', ['typescript', 'ts'])]
       });
 
       const result = await matchSkills(analysis);
 
-      const tsSkill = getAllRecommendations(result).find(r => r.name === 'code-review-ts');
-      expect(tsSkill).toBeDefined();
-      expect(tsSkill!.source).toBe('bundled');
+      // Should find curated skills for TypeScript from 4meta5-skills
+      const allRecs = getAllRecommendations(result);
+      const tsSkills = allRecs.filter(r =>
+        r.tags.some(t => t.includes('typescript') || t.includes('ts'))
+      );
+      expect(tsSkills.length).toBeGreaterThan(0);
+    });
+
+    it('matches skills for Rust projects from curated sources', async () => {
+      const analysis = createAnalysis({
+        languages: [createTech('Rust', 'language', ['rust', 'cargo'])]
+      });
+
+      const result = await matchSkills(analysis);
+
+      // Should find curated skills for Rust from 4meta5-skills
+      const allRecs = getAllRecommendations(result);
+      const rustSkills = allRecs.filter(r =>
+        r.tags.some(t => t.includes('rust') || t.includes('cargo'))
+      );
+      expect(rustSkills.length).toBeGreaterThan(0);
     });
 
     it('skips already installed skills', async () => {
@@ -106,33 +101,18 @@ describe('Skill Matcher', () => {
       const rustSkill = getAllRecommendations(result).find(r => r.name === 'code-review-rust');
       expect(rustSkill).toBeUndefined();
     });
-
-    it('assigns higher confidence for better tag matches', async () => {
-      const analysis = createAnalysis({
-        languages: [
-          createTech('TypeScript', 'language', ['typescript', 'ts', 'javascript', 'js'], 'high')
-        ]
-      });
-
-      const result = await matchSkills(analysis);
-
-      const tsSkill = getAllRecommendations(result).find(r => r.name === 'code-review-ts');
-      expect(tsSkill).toBeDefined();
-      // Should be high confidence because multiple tags match
-      expect(tsSkill!.confidence).toBe('high');
-    });
   });
 
   describe('filterByConfidence', () => {
     const mockResult: MatchResult = {
       high: [
-        { name: 'skill-1', confidence: 'high', reason: '', source: 'bundled', tags: [] }
+        { name: 'skill-1', confidence: 'high', reason: '', source: 'curated', tags: [] }
       ],
       medium: [
-        { name: 'skill-2', confidence: 'medium', reason: '', source: 'bundled', tags: [] }
+        { name: 'skill-2', confidence: 'medium', reason: '', source: 'curated', tags: [] }
       ],
       low: [
-        { name: 'skill-3', confidence: 'low', reason: '', source: 'bundled', tags: [] }
+        { name: 'skill-3', confidence: 'low', reason: '', source: 'curated', tags: [] }
       ]
     };
 
@@ -158,7 +138,7 @@ describe('Skill Matcher', () => {
   describe('filterByTag', () => {
     const recommendations: SkillRecommendation[] = [
       { name: 'svelte-skill', confidence: 'high', reason: '', source: 'curated', tags: ['svelte', 'frontend'] },
-      { name: 'rust-skill', confidence: 'high', reason: '', source: 'bundled', tags: ['rust', 'cargo'] },
+      { name: 'rust-skill', confidence: 'high', reason: '', source: 'curated', tags: ['rust', 'cargo'] },
       { name: 'cloudflare-skill', confidence: 'medium', reason: '', source: 'curated', tags: ['cloudflare', 'workers'] }
     ];
 
@@ -195,9 +175,9 @@ describe('Skill Matcher', () => {
   describe('getAllRecommendations', () => {
     it('returns recommendations in confidence order', () => {
       const result: MatchResult = {
-        high: [{ name: 'high-1', confidence: 'high', reason: '', source: 'bundled', tags: [] }],
-        medium: [{ name: 'med-1', confidence: 'medium', reason: '', source: 'bundled', tags: [] }],
-        low: [{ name: 'low-1', confidence: 'low', reason: '', source: 'bundled', tags: [] }]
+        high: [{ name: 'high-1', confidence: 'high', reason: '', source: 'curated', tags: [] }],
+        medium: [{ name: 'med-1', confidence: 'medium', reason: '', source: 'curated', tags: [] }],
+        low: [{ name: 'low-1', confidence: 'low', reason: '', source: 'curated', tags: [] }]
       };
 
       const all = getAllRecommendations(result);
@@ -278,18 +258,6 @@ describe('Curated Sources Matching', () => {
 });
 
 describe('Category-based Deduplication', () => {
-  it('includes category in bundled skill recommendations', async () => {
-    const analysis = createAnalysis({
-      languages: [createTech('TypeScript', 'language', ['typescript', 'ts'])]
-    });
-
-    const result = await matchSkills(analysis);
-
-    const tsSkill = getAllRecommendations(result).find(r => r.name === 'code-review-ts');
-    expect(tsSkill).toBeDefined();
-    expect(tsSkill!.category).toBe('refactoring');
-  });
-
   it('includes category in curated skill recommendations', async () => {
     const analysis = createAnalysis({
       frameworks: [
@@ -305,18 +273,6 @@ describe('Category-based Deduplication', () => {
     );
     expect(svelteRecs.length).toBeGreaterThan(0);
     expect(svelteRecs[0].category).toBe('framework');
-  });
-
-  it('includes priority in bundled skill recommendations', async () => {
-    const analysis = createAnalysis({
-      languages: [createTech('TypeScript', 'language', ['typescript', 'ts'])]
-    });
-
-    const result = await matchSkills(analysis);
-
-    const tsSkill = getAllRecommendations(result).find(r => r.name === 'code-review-ts');
-    expect(tsSkill).toBeDefined();
-    expect(tsSkill!.priority).toBe(10);
   });
 
   it('includes priority in curated skill recommendations', async () => {
@@ -336,34 +292,13 @@ describe('Category-based Deduplication', () => {
     expect(svelteRecs[0].priority).toBe(10);
   });
 
-  it('bundled skills take priority over curated for same category', async () => {
-    // Security category has both bundled (security-analysis) and potentially curated skills
-    const analysis = createAnalysis({
-      languages: [createTech('TypeScript', 'language', ['typescript', 'ts', 'security'])]
-    });
-
-    const result = await matchSkills(analysis);
-
-    const allRecs = getAllRecommendations(result);
-    const securityRecs = allRecs.filter(r => r.category === 'security');
-
-    // If any security skills matched, bundled should be first
-    if (securityRecs.length > 0) {
-      const firstSecurity = securityRecs[0];
-      // Bundled takes priority, so if it matched it should be first
-      if (firstSecurity.name === 'security-analysis') {
-        expect(firstSecurity.source).toBe('bundled');
-      }
-    }
-  });
-
   it('tracks alternatives structure correctly when present', async () => {
     // Create a recommendation with alternatives manually to test the interface
     const recWithAlts: SkillRecommendation = {
       name: 'test-skill',
       confidence: 'high',
       reason: 'test',
-      source: 'bundled',
+      source: 'curated',
       tags: ['test'],
       category: 'testing',
       priority: 10,
@@ -386,7 +321,7 @@ describe('Category-based Deduplication', () => {
       name: 'skill-1',
       confidence: 'high',
       reason: 'test',
-      source: 'bundled',
+      source: 'curated',
       tags: ['a', 'b'],
       category: 'testing',
       priority: 10
@@ -414,7 +349,7 @@ describe('Category-based Deduplication', () => {
       name: 'skill-1',
       confidence: 'high',
       reason: 'test',
-      source: 'bundled',
+      source: 'curated',
       tags: ['a', 'b']
       // No category
     };

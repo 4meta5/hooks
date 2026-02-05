@@ -16,6 +16,14 @@ npx @4meta5/skills-cli scan
 - **Validates skills** for quality and correctness
 - **Syncs CLAUDE.md** to keep skill references current
 
+## Skills
+
+This CLI manages skills from [4meta5/skills](https://github.com/4meta5/skills).
+
+Core skills include: `tdd`, `code-review-ts`, `code-review-rust`, `differential-review`, `refactor-suggestions`, `repo-hygiene`, and more.
+
+Skills are automatically recommended when you run `skills scan`.
+
 ## Quick Start
 
 ```bash
@@ -45,13 +53,10 @@ Detected Stack:
 
 Recommended Skills:
 
-  CODE-QUALITY
-  + code-review-ts (bundled)
+  DEVELOPMENT
+  + tdd (4meta5-skills)
     Detected TypeScript (package.json typescript dependency)
-
-  TESTING
-  + tdd (bundled)
-    Detected Vitest (package.json vitest)
+    7 alternative(s) available
 ```
 
 ## Commands

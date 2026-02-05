@@ -28,9 +28,3 @@ export * from './categories/index.js';
 // Templates
 export { newTsProject } from './templates/new-project.js';
 export { extendWithTesting, extendWithSecurity } from './templates/extend-project.js';
-
-// Bundled skills (minimal API)
-export {
-  getBundledSkill,
-  listBundledSkillNames
-} from './bundled.js';

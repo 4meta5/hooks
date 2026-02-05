@@ -1,4 +1,3 @@
-import { createSkillsLibrary } from '@4meta5/skills';
 import type { Skill } from '@4meta5/skills';
 import type { ProjectAnalysis, Confidence, DetectedTechnology, SkillCategory } from './detector/types.js';
 import { getAllTags, getAllTechnologies } from './detector/index.js';
@@ -36,7 +35,7 @@ export interface SkillRecommendation {
 /**
  * Type of skill source
  */
-export type SkillSourceType = 'bundled' | 'registered' | 'curated';
+export type SkillSourceType = 'registered' | 'curated';
 
 /**
  * Result of matching skills to a project
@@ -46,78 +45,6 @@ export interface MatchResult {
   medium: SkillRecommendation[];
   low: SkillRecommendation[];
 }
-
-/**
- * Built-in skill mappings (bundled skills) with categories for deduplication
- */
-interface BundledSkillMapping {
-  tags: string[];
-  category: SkillCategory;
-  priority: number;  // Higher = better within same category
-}
-
-export const BUNDLED_SKILL_MAPPINGS: Record<string, BundledSkillMapping> = {
-  'code-review-rust': {
-    tags: ['rust', 'rs', 'cargo'],
-    category: 'refactoring',
-    priority: 10
-  },
-  'code-review-ts': {
-    tags: ['typescript', 'ts'],
-    category: 'refactoring',
-    priority: 10
-  },
-  'unit-test-workflow': {
-    tags: ['testing', 'unit-testing'],
-    category: 'testing',
-    priority: 10  // Primary testing skill
-  },
-  'suggest-tests': {
-    tags: ['testing', 'unit-testing'],
-    category: 'testing',
-    priority: 7  // Complementary to unit-test-workflow
-  },
-  'security-analysis': {
-    tags: ['security'],
-    category: 'security',
-    priority: 10
-  },
-  'differential-review': {
-    tags: ['security', 'code-review'],
-    category: 'security',
-    priority: 8  // More specialized than security-analysis
-  },
-  'deploy-mystack': {
-    tags: ['mystack'],
-    category: 'development',
-    priority: 12
-  },
-  'google-oauth': {
-    tags: ['oauth', 'google', 'auth', 'openid'],
-    category: 'security',
-    priority: 9
-  },
-  'svelte5-cloudflare-pages': {
-    tags: ['svelte5', 'sveltekit', 'cloudflare-pages', 'pages', 'wrangler'],
-    category: 'development',
-    priority: 9
-  },
-  'rust-aws-lambda': {
-    tags: ['rust', 'lambda', 'aws', 'lambda_http', 'lambda_runtime'],
-    category: 'development',
-    priority: 9
-  },
-  'neon-postgres': {
-    tags: ['neon', 'postgres', 'database', 'pgbouncer', 'pooler'],
-    category: 'development',
-    priority: 9
-  }
-};
-
-// Backwards compatibility: extract just tags
-const BUNDLED_SKILL_TAGS: Record<string, string[]> = Object.fromEntries(
-  Object.entries(BUNDLED_SKILL_MAPPINGS).map(([name, mapping]) => [name, mapping.tags])
-);
 
 /**
  * Calculate confidence score based on tag matches
@@ -157,51 +84,6 @@ function calculateConfidence(
   }
 
   return { confidence, matchedTags, reason };
-}
-
-/**
- * Match bundled skills to detected technologies
- */
-async function matchBundledSkills(
-  analysis: ProjectAnalysis,
-  detectedTags: Set<string>,
-  technologies: DetectedTechnology[]
-): Promise<SkillRecommendation[]> {
-  const recommendations: SkillRecommendation[] = [];
-  const library = createSkillsLibrary({ cwd: analysis.projectPath });
-
-  for (const [skillName, mapping] of Object.entries(BUNDLED_SKILL_MAPPINGS)) {
-    // Skip if already installed
-    if (analysis.existingSkills.includes(skillName)) {
-      continue;
-    }
-
-    const { confidence, matchedTags, reason } = calculateConfidence(
-      mapping.tags,
-      detectedTags,
-      technologies
-    );
-
-    if (matchedTags.length > 0) {
-      try {
-        const skill = await library.loadSkill(skillName);
-        recommendations.push({
-          name: skillName,
-          confidence,
-          reason,
-          source: 'bundled',
-          skill,
-          tags: matchedTags,
-          category: mapping.category,
-          priority: mapping.priority
-        });
-      } catch {
-        // Skill not found in bundled, skip
-      }
-    }
-  }
-
-  return recommendations;
 }
 
 /**
@@ -471,9 +353,8 @@ function deduplicateByFunction(
       continue;
     }
 
-    // Sort by: source priority (bundled > registered > curated), then by priority field
+    // Sort by: source priority (registered > curated), then by priority field
     const sourcePriority: Record<SkillSourceType, number> = {
-      bundled: 3,
       registered: 2,
       curated: 1
     };
@@ -508,18 +389,17 @@ export async function matchSkills(analysis: ProjectAnalysis): Promise<MatchResul
   const technologies = getAllTechnologies(analysis);
 
   // Match from all sources
-  const [bundled, registered, curated] = await Promise.all([
-    matchBundledSkills(analysis, detectedTags, technologies),
+  const [registered, curated] = await Promise.all([
     matchRegisteredSkills(analysis, detectedTags, technologies),
     matchCuratedSkills(analysis, detectedTags, technologies)
   ]);
 
-  // Combine and deduplicate by name first (bundled > registered > curated)
+  // Combine and deduplicate by name first (registered > curated)
   const allRecommendations: SkillRecommendation[] = [];
   const seenNames = new Set<string>();
 
   // Add in priority order
-  for (const rec of [...bundled, ...registered, ...curated]) {
+  for (const rec of [...registered, ...curated]) {
     if (!seenNames.has(rec.name)) {
       seenNames.add(rec.name);
       allRecommendations.push(rec);

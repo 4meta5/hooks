@@ -122,7 +122,7 @@ async function updateAllSources(): Promise<void> {
 
 async function updateInstalledSkills(options: UpdateOptions = {}): Promise<void> {
   const installed = await getInstalledSkills();
-  const fromSources = installed.filter(s => s.source !== 'bundled' && s.source !== 'local');
+  const fromSources = installed.filter(s => s.source !== 'local');
 
   if (fromSources.length === 0) {
     console.log('No skills installed from remote sources.');

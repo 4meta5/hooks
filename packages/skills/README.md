@@ -33,7 +33,6 @@ console.log(skill.content);              // Skill instructions
 Skills are loaded from these locations (in order):
 1. Project: `.claude/skills/<name>/SKILL.md`
 2. User: `~/.claude/skills/<name>/SKILL.md`
-3. Bundled: Skills included with this package
 
 ### List all available skills
 
@@ -84,33 +83,6 @@ await library.extendProject(['tdd', 'security-analysis']);
 ```
 
 This installs the specified skills and updates CLAUDE.md to reference them.
-
-## Bundled Skills
-
-Access bundled skills directly without loading from disk:
-
-```typescript
-import {
-  tdd,
-  unitTestWorkflow,
-  suggestTests,
-  noWorkarounds,
-  codeReview,
-  securityAnalysis,
-  getBundledSkill,
-  listBundledSkillNames
-} from '@4meta5/skills';
-
-// Get a specific bundled skill
-const skill = tdd;
-
-// Get by name
-const skill = getBundledSkill('tdd');
-
-// List all bundled skill names
-const names = listBundledSkillNames();
-// ['tdd', 'unit-test-workflow', 'suggest-tests', ...]
-```
 
 ## Project Templates
 
@@ -195,7 +167,6 @@ interface InstallOptions {
 
 interface SkillsLibraryOptions {
   cwd?: string;
-  skillsDir?: string;
 }
 
 interface SkillsLibrary {

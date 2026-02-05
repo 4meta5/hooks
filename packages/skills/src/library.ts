@@ -1,6 +1,5 @@
 import { mkdir, writeFile, copyFile, readFile } from 'fs/promises';
 import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
 import { homedir } from 'os';
 import type {
   Skill,
@@ -9,22 +8,8 @@ import type {
   SkillsLibraryOptions,
   InstallOptions,
   ProjectTemplate,
-  FileStructure
 } from './types.js';
 import { loadSkillFromPath, loadSkillsFromDirectory } from '@4meta5/skill-loader';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-/**
- * Get the path to bundled skills in this package
- * In development: packages/skills-library/skills
- * In dist: packages/skills-library/skills (skills dir is at package root, not in dist)
- */
-function getBundledSkillsPath(): string {
-  // __dirname is dist/src when compiled, so go up two levels to package root
-  return join(__dirname, '..', '..', 'skills');
-}
 
 /**
  * Get the user's global skills directory
@@ -45,18 +30,16 @@ function getProjectSkillsPath(cwd: string): string {
  */
 export function createSkillsLibrary(options: SkillsLibraryOptions = {}): SkillsLibrary {
   const cwd = options.cwd || process.cwd();
-  const bundledSkillsDir = options.skillsDir || getBundledSkillsPath();
 
   return {
     /**
-     * Load a skill by name from bundled, project, or user locations
+     * Load a skill by name from project or user locations
      */
     async loadSkill(name: string): Promise<Skill> {
-      // Search order: project -> user -> bundled
+      // Search order: project -> user
       const searchPaths = [
         join(getProjectSkillsPath(cwd), name),
         join(getUserSkillsPath(), name),
-        join(bundledSkillsDir, name)
       ];
 
       for (const skillPath of searchPaths) {
@@ -81,7 +64,6 @@ export function createSkillsLibrary(options: SkillsLibraryOptions = {}): SkillsL
       const locations = [
         getProjectSkillsPath(cwd),
         getUserSkillsPath(),
-        bundledSkillsDir
       ];
 
       for (const location of locations) {
@@ -151,7 +133,7 @@ export function createSkillsLibrary(options: SkillsLibraryOptions = {}): SkillsL
       await writeFile(join(targetPath, 'CLAUDE.md'), template.claudemd, 'utf-8');
 
       // Install skills
-      const tempLibrary = createSkillsLibrary({ cwd: targetPath, skillsDir: bundledSkillsDir });
+      const tempLibrary = createSkillsLibrary({ cwd: targetPath });
       for (const skillName of template.skills) {
         try {
           const skill = await this.loadSkill(skillName);

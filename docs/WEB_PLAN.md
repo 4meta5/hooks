@@ -16,7 +16,7 @@ No backend. No auth. No payments. No database.
 |------|---------|
 | `/` | Landing page with value prop, features, installation |
 | `/docs` | Documentation for CLI, skill format, getting started |
-| `/skills` | Static list of bundled skills (read from filesystem at build) |
+| `/skills` | Static list of skills from curated sources (fetched at build) |
 
 That's it. Three routes.
 
@@ -106,7 +106,7 @@ Write docs in markdown. mdsvex converts them to pages at build time.
 
 ## Skills Page
 
-Static list of bundled skills from `packages/skills-library/skills/`.
+Static list of skills from [4meta5/skills](https://github.com/4meta5/skills) fetched at build time.
 
 For each skill, show:
 - Name

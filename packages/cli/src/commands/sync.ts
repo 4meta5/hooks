@@ -98,7 +98,7 @@ export async function syncCommand(names: string[], options: SyncOptions = {}): P
   let totalSynced = 0;
 
   for (const skillName of skillsToSync) {
-    // Get the source skill content - prefer local .claude/skills/, fall back to bundled
+    // Get the source skill content - prefer local .claude/skills/, fall back to user skills
     let sourceSkillPath = join(sourceDir, '.claude', 'skills', skillName);
     const localSkillMdPath = join(sourceSkillPath, 'SKILL.md');
 
@@ -107,17 +107,17 @@ export async function syncCommand(names: string[], options: SyncOptions = {}): P
       await stat(localSkillMdPath);
       sourceExists = true;
     } catch {
-      // Try loading from bundled skills
+      // Try loading from user skills
       const library = createSkillsLibrary({ cwd: sourceDir });
       try {
         const skill = await library.loadSkill(skillName);
-        // Use the bundled skill path as source if found
+        // Use the skill path as source if found
         if (skill.path) {
           sourceSkillPath = skill.path;
           sourceExists = true;
         }
       } catch {
-        // Skill not found in bundled either
+        // Skill not found
       }
     }
 

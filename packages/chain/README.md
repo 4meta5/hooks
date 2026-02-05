@@ -310,11 +310,11 @@ Add to your `.claude/settings.json`:
 
 ## Related Skills
 
-Chain works with these bundled skills:
+Chain works with skills from [4meta5/skills](https://github.com/4meta5/skills):
 
 - **tdd** - Test-Driven Development (RED → GREEN → REFACTOR)
-- **no-workarounds** - Block manual workarounds when building tools
-- **dogfood-skills** - Enforce dogfooding the tools you build
+- **dogfood** - Enforce dogfooding the tools you build
+- **repo-hygiene** - Repository cleanup and documentation
 
 ## License
 

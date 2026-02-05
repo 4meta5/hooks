@@ -79,7 +79,7 @@ Patterns worth adopting:
 | Eligibility checking | OS, bins, env, config requirements |
 | Priority execution | System (100) > User (50) > Default (0) |
 | Fault isolation | Errors caught per-hook, don't block others |
-| Layered discovery | workspace > managed > bundled > extra |
+| Layered discovery | project > user > curated sources |
 
 ---
 

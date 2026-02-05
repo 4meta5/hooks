@@ -42,15 +42,14 @@ function createSkillMd(data: { name: string; description: string; body: string; 
 }
 
 // Helper to create isolated temp directory for each test iteration
-async function withTempDirs<T>(fn: (bundledDir: string, projectDir: string) => Promise<T>): Promise<T> {
+async function withTempDirs<T>(fn: (projectDir: string, skillsDir: string) => Promise<T>): Promise<T> {
   const tempDir = join(tmpdir(), `lib-prop-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-  const bundledDir = join(tempDir, 'bundled');
   const projectDir = join(tempDir, 'project');
+  const skillsDir = join(projectDir, '.claude', 'skills');
 
   try {
-    await mkdir(bundledDir, { recursive: true });
-    await mkdir(projectDir, { recursive: true });
-    return await fn(bundledDir, projectDir);
+    await mkdir(skillsDir, { recursive: true });
+    return await fn(projectDir, skillsDir);
   } finally {
     await rm(tempDir, { recursive: true, force: true });
   }
@@ -61,12 +60,12 @@ describe('createSkillsLibrary property tests', () => {
     it('should always return skill with matching name', async () => {
       await fc.assert(
         fc.asyncProperty(skillDataArb, async (skillData) => {
-          await withTempDirs(async (bundledDir, projectDir) => {
-            const skillDir = join(bundledDir, skillData.name);
+          await withTempDirs(async (projectDir, skillsDir) => {
+            const skillDir = join(skillsDir, skillData.name);
             await mkdir(skillDir, { recursive: true });
             await writeFile(join(skillDir, 'SKILL.md'), createSkillMd(skillData));
 
-            const library = createSkillsLibrary({ cwd: projectDir, skillsDir: bundledDir });
+            const library = createSkillsLibrary({ cwd: projectDir });
             const skill = await library.loadSkill(skillData.name);
 
             expect(skill.metadata.name).toBe(skillData.name);
@@ -76,42 +75,11 @@ describe('createSkillsLibrary property tests', () => {
       );
     });
 
-    it('should prioritize project skills over bundled skills with same name', async () => {
-      await fc.assert(
-        fc.asyncProperty(
-          skillDataArb,
-          descriptionArb,
-          async (skillData, projectDescription) => {
-            await withTempDirs(async (bundledDir, projectDir) => {
-              // Create bundled skill
-              const bundledSkillDir = join(bundledDir, skillData.name);
-              await mkdir(bundledSkillDir, { recursive: true });
-              await writeFile(join(bundledSkillDir, 'SKILL.md'), createSkillMd(skillData));
-
-              // Create project skill with same name but different description
-              const projectSkillDir = join(projectDir, '.claude', 'skills', skillData.name);
-              await mkdir(projectSkillDir, { recursive: true });
-              await writeFile(
-                join(projectSkillDir, 'SKILL.md'),
-                createSkillMd({ ...skillData, description: projectDescription })
-              );
-
-              const library = createSkillsLibrary({ cwd: projectDir, skillsDir: bundledDir });
-              const skill = await library.loadSkill(skillData.name);
-
-              expect(skill.metadata.description).toBe(projectDescription);
-            });
-          }
-        ),
-        { numRuns: 15 }
-      );
-    });
-
     it('should throw for non-existent skills', async () => {
       await fc.assert(
         fc.asyncProperty(skillNameArb, async (name) => {
-          await withTempDirs(async (bundledDir, projectDir) => {
-            const library = createSkillsLibrary({ cwd: projectDir, skillsDir: bundledDir });
+          await withTempDirs(async (projectDir) => {
+            const library = createSkillsLibrary({ cwd: projectDir });
             await expect(library.loadSkill(name)).rejects.toThrow(`Skill not found: ${name}`);
           });
         }),
@@ -126,7 +94,7 @@ describe('createSkillsLibrary property tests', () => {
         fc.asyncProperty(
           fc.array(skillDataArb, { minLength: 1, maxLength: 4 }),
           async (skills) => {
-            await withTempDirs(async (bundledDir, projectDir) => {
+            await withTempDirs(async (projectDir, skillsDir) => {
               // Create skills with unique names
               const uniqueSkills = skills.map((skill, i) => ({
                 ...skill,
@@ -134,12 +102,12 @@ describe('createSkillsLibrary property tests', () => {
               }));
 
               for (const skill of uniqueSkills) {
-                const dir = join(bundledDir, skill.name);
+                const dir = join(skillsDir, skill.name);
                 await mkdir(dir, { recursive: true });
                 await writeFile(join(dir, 'SKILL.md'), createSkillMd(skill));
               }
 
-              const library = createSkillsLibrary({ cwd: projectDir, skillsDir: bundledDir });
+              const library = createSkillsLibrary({ cwd: projectDir });
               const listed = await library.listSkills();
 
               expect(listed.length).toBe(uniqueSkills.length);
@@ -156,19 +124,19 @@ describe('createSkillsLibrary property tests', () => {
           fc.array(skillDataArb.map(s => ({ ...s, category: 'testing' as SkillCategory })), { minLength: 1, maxLength: 3 }),
           fc.array(skillDataArb.map(s => ({ ...s, category: 'development' as SkillCategory })), { minLength: 1, maxLength: 3 }),
           async (testingSkills, devSkills) => {
-            await withTempDirs(async (bundledDir, projectDir) => {
+            await withTempDirs(async (projectDir, skillsDir) => {
               const allSkills = [
                 ...testingSkills.map((s, i) => ({ ...s, name: `testing-${i}` })),
                 ...devSkills.map((s, i) => ({ ...s, name: `dev-${i}` }))
               ];
 
               for (const skill of allSkills) {
-                const dir = join(bundledDir, skill.name);
+                const dir = join(skillsDir, skill.name);
                 await mkdir(dir, { recursive: true });
                 await writeFile(join(dir, 'SKILL.md'), createSkillMd(skill));
               }
 
-              const library = createSkillsLibrary({ cwd: projectDir, skillsDir: bundledDir });
+              const library = createSkillsLibrary({ cwd: projectDir });
 
               const filteredTesting = await library.listSkills('testing');
               const filteredDev = await library.listSkills('development');
@@ -188,47 +156,29 @@ describe('createSkillsLibrary property tests', () => {
         { numRuns: 10 }
       );
     });
-
-    it('should deduplicate skills across locations', async () => {
-      await fc.assert(
-        fc.asyncProperty(skillDataArb, async (skillData) => {
-          await withTempDirs(async (bundledDir, projectDir) => {
-            // Create same skill in both bundled and project
-            const bundledSkillDir = join(bundledDir, skillData.name);
-            await mkdir(bundledSkillDir, { recursive: true });
-            await writeFile(join(bundledSkillDir, 'SKILL.md'), createSkillMd(skillData));
-
-            const projectSkillDir = join(projectDir, '.claude', 'skills', skillData.name);
-            await mkdir(projectSkillDir, { recursive: true });
-            await writeFile(join(projectSkillDir, 'SKILL.md'), createSkillMd(skillData));
-
-            const library = createSkillsLibrary({ cwd: projectDir, skillsDir: bundledDir });
-            const listed = await library.listSkills();
-
-            const matchingSkills = listed.filter((s: Skill) => s.metadata.name === skillData.name);
-            expect(matchingSkills.length).toBe(1);
-          });
-        }),
-        { numRuns: 15 }
-      );
-    });
   });
 
   describe('installSkill', () => {
     it('should install skill to project location', async () => {
       await fc.assert(
         fc.asyncProperty(skillDataArb, async (skillData) => {
-          await withTempDirs(async (bundledDir, projectDir) => {
-            // Create bundled skill
-            const bundledSkillDir = join(bundledDir, skillData.name);
-            await mkdir(bundledSkillDir, { recursive: true });
-            await writeFile(join(bundledSkillDir, 'SKILL.md'), createSkillMd(skillData));
+          await withTempDirs(async (projectDir, skillsDir) => {
+            // Create skill
+            const skillDir = join(skillsDir, skillData.name);
+            await mkdir(skillDir, { recursive: true });
+            await writeFile(join(skillDir, 'SKILL.md'), createSkillMd(skillData));
 
-            const library = createSkillsLibrary({ cwd: projectDir, skillsDir: bundledDir });
+            const library = createSkillsLibrary({ cwd: projectDir });
             const skill = await library.loadSkill(skillData.name);
-            await library.installSkill(skill, { location: 'project' });
 
-            const installedPath = join(projectDir, '.claude', 'skills', skillData.name, 'SKILL.md');
+            // Create another project to install into
+            const otherProjectDir = join(projectDir, '..', 'other-project');
+            await mkdir(otherProjectDir, { recursive: true });
+
+            const otherLibrary = createSkillsLibrary({ cwd: otherProjectDir });
+            await otherLibrary.installSkill(skill, { location: 'project' });
+
+            const installedPath = join(otherProjectDir, '.claude', 'skills', skillData.name, 'SKILL.md');
             const installedContent = await readFile(installedPath, 'utf-8');
 
             expect(installedContent).toContain(`name: ${skillData.name}`);
@@ -241,19 +191,23 @@ describe('createSkillsLibrary property tests', () => {
     it('installed skill should be loadable', async () => {
       await fc.assert(
         fc.asyncProperty(skillDataArb, async (skillData) => {
-          await withTempDirs(async (bundledDir, projectDir) => {
-            // Create bundled skill
-            const bundledSkillDir = join(bundledDir, skillData.name);
-            await mkdir(bundledSkillDir, { recursive: true });
-            await writeFile(join(bundledSkillDir, 'SKILL.md'), createSkillMd(skillData));
+          await withTempDirs(async (projectDir, skillsDir) => {
+            // Create skill
+            const skillDir = join(skillsDir, skillData.name);
+            await mkdir(skillDir, { recursive: true });
+            await writeFile(join(skillDir, 'SKILL.md'), createSkillMd(skillData));
 
-            const library = createSkillsLibrary({ cwd: projectDir, skillsDir: bundledDir });
+            const library = createSkillsLibrary({ cwd: projectDir });
             const originalSkill = await library.loadSkill(skillData.name);
-            await library.installSkill(originalSkill, { location: 'project' });
 
-            // Create new library instance to load from project
-            const newLibrary = createSkillsLibrary({ cwd: projectDir, skillsDir: '/nonexistent' });
-            const loadedSkill = await newLibrary.loadSkill(skillData.name);
+            // Create another project to install into
+            const otherProjectDir = join(projectDir, '..', 'other-project');
+            await mkdir(otherProjectDir, { recursive: true });
+
+            const otherLibrary = createSkillsLibrary({ cwd: otherProjectDir });
+            await otherLibrary.installSkill(originalSkill, { location: 'project' });
+
+            const loadedSkill = await otherLibrary.loadSkill(skillData.name);
 
             expect(loadedSkill.metadata.name).toBe(skillData.name);
           });
@@ -269,27 +223,26 @@ describe('createSkillsLibrary property tests', () => {
         fc.asyncProperty(
           fc.array(skillDataArb, { minLength: 1, maxLength: 3 }),
           async (skills) => {
-            await withTempDirs(async (bundledDir, projectDir) => {
-              // Create bundled skills with unique names
+            await withTempDirs(async (projectDir, skillsDir) => {
+              // Create skills with unique names
               const uniqueSkills = skills.map((skill, i) => ({
                 ...skill,
                 name: `${skill.name}-${i}`
               }));
 
               for (const skill of uniqueSkills) {
-                const dir = join(bundledDir, skill.name);
+                const dir = join(skillsDir, skill.name);
                 await mkdir(dir, { recursive: true });
                 await writeFile(join(dir, 'SKILL.md'), createSkillMd(skill));
               }
 
-              const library = createSkillsLibrary({ cwd: projectDir, skillsDir: bundledDir });
+              const library = createSkillsLibrary({ cwd: projectDir });
               await library.extendProject(uniqueSkills.map(s => s.name));
 
-              // Verify all skills are installed
+              // Verify all skills are in CLAUDE.md
+              const claudeMdContent = await readFile(join(projectDir, 'CLAUDE.md'), 'utf-8');
               for (const skill of uniqueSkills) {
-                const installedPath = join(projectDir, '.claude', 'skills', skill.name, 'SKILL.md');
-                const content = await readFile(installedPath, 'utf-8');
-                expect(content).toContain(`name: ${skill.name}`);
+                expect(claudeMdContent).toContain(`@.claude/skills/${skill.name}/SKILL.md`);
               }
             });
           }
@@ -301,13 +254,13 @@ describe('createSkillsLibrary property tests', () => {
     it('should update or create CLAUDE.md with skill references', async () => {
       await fc.assert(
         fc.asyncProperty(skillDataArb, async (skillData) => {
-          await withTempDirs(async (bundledDir, projectDir) => {
-            // Create bundled skill
-            const dir = join(bundledDir, skillData.name);
+          await withTempDirs(async (projectDir, skillsDir) => {
+            // Create skill
+            const dir = join(skillsDir, skillData.name);
             await mkdir(dir, { recursive: true });
             await writeFile(join(dir, 'SKILL.md'), createSkillMd(skillData));
 
-            const library = createSkillsLibrary({ cwd: projectDir, skillsDir: bundledDir });
+            const library = createSkillsLibrary({ cwd: projectDir });
             await library.extendProject([skillData.name]);
 
             const claudeMdContent = await readFile(join(projectDir, 'CLAUDE.md'), 'utf-8');
@@ -326,19 +279,19 @@ describe('invariant tests', () => {
       fc.asyncProperty(
         fc.array(skillDataArb, { minLength: 0, maxLength: 4 }),
         async (skills) => {
-          await withTempDirs(async (bundledDir, projectDir) => {
+          await withTempDirs(async (projectDir, skillsDir) => {
             const uniqueSkills = skills.map((skill, i) => ({
               ...skill,
               name: `skill-${i}`
             }));
 
             for (const skill of uniqueSkills) {
-              const dir = join(bundledDir, skill.name);
+              const dir = join(skillsDir, skill.name);
               await mkdir(dir, { recursive: true });
               await writeFile(join(dir, 'SKILL.md'), createSkillMd(skill));
             }
 
-            const library = createSkillsLibrary({ cwd: projectDir, skillsDir: bundledDir });
+            const library = createSkillsLibrary({ cwd: projectDir });
             const listed = await library.listSkills();
 
             let loadableCount = 0;
@@ -362,18 +315,22 @@ describe('invariant tests', () => {
   it('loading then installing then loading should preserve skill data', async () => {
     await fc.assert(
       fc.asyncProperty(skillDataArb, async (skillData) => {
-        await withTempDirs(async (bundledDir, projectDir) => {
-          // Create bundled skill
-          const dir = join(bundledDir, skillData.name);
+        await withTempDirs(async (projectDir, skillsDir) => {
+          // Create skill
+          const dir = join(skillsDir, skillData.name);
           await mkdir(dir, { recursive: true });
           await writeFile(join(dir, 'SKILL.md'), createSkillMd(skillData));
 
-          const library = createSkillsLibrary({ cwd: projectDir, skillsDir: bundledDir });
+          const library = createSkillsLibrary({ cwd: projectDir });
 
-          // Load -> Install -> Load cycle
+          // Load -> Install (to another project) -> Load cycle
           const original = await library.loadSkill(skillData.name);
-          await library.installSkill(original, { location: 'project' });
-          const reloaded = await library.loadSkill(skillData.name);
+
+          const otherProjectDir = join(projectDir, '..', 'other-project');
+          await mkdir(otherProjectDir, { recursive: true });
+          const otherLibrary = createSkillsLibrary({ cwd: otherProjectDir });
+          await otherLibrary.installSkill(original, { location: 'project' });
+          const reloaded = await otherLibrary.loadSkill(skillData.name);
 
           // Core metadata should be preserved
           expect(reloaded.metadata.name).toBe(original.metadata.name);

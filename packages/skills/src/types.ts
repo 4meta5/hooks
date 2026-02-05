@@ -66,7 +66,6 @@ export interface InstallOptions {
  */
 export interface SkillsLibraryOptions {
   cwd?: string;
-  skillsDir?: string;
 }
 
 /**

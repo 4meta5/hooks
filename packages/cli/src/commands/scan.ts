@@ -1,5 +1,4 @@
 import { checkbox, confirm } from '@inquirer/prompts';
-import { createSkillsLibrary } from '@4meta5/skills';
 import { analyzeProject, getAllTechnologies, type ProjectAnalysis } from '../detector/index.js';
 import type { Confidence, DetectedTechnology } from '../detector/types.js';
 import {
@@ -247,7 +246,7 @@ function displayRecommendations(matchResult: MatchResult, options: ScanOptions):
 }
 
 function displayRecommendation(rec: SkillRecommendation, options: ScanOptions): void {
-  const sourceInfo = rec.sourceName ? ` (${rec.sourceName})` : ' (bundled)';
+  const sourceInfo = rec.sourceName ? ` (${rec.sourceName})` : '';
   const confidenceMarker = rec.confidence === 'high' ? '' : ` [${rec.confidence}]`;
   console.log(`  + ${rec.name}${sourceInfo}${confidenceMarker}`);
   console.log(`    ${rec.reason}`);
@@ -369,23 +368,12 @@ async function installSkills(
   analysis: ProjectAnalysis
 ): Promise<void> {
   const targetDir = join(analysis.projectPath, '.claude', 'skills');
-  const library = createSkillsLibrary({ cwd: analysis.projectPath });
   let installed = 0;
   const installedNames: string[] = [];
 
   for (const rec of skills) {
     try {
-      if (rec.source === 'bundled') {
-        // Install from bundled
-        const skill = rec.skill || await library.loadSkill(rec.name);
-        await library.installSkill(skill, { location: 'project' });
-
-        await trackInstalledSkill({
-          name: rec.name,
-          source: 'bundled',
-          installedAt: new Date().toISOString()
-        });
-      } else if (rec.source === 'curated' && rec.sourceName) {
+      if (rec.source === 'curated' && rec.sourceName) {
         // Get curated source config (always has correct path, etc.)
         const curatedSource = getCuratedSource(rec.sourceName);
         if (!curatedSource) {

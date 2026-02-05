@@ -23,6 +23,31 @@ export interface CuratedSource {
  * When multiple skills serve the same purpose, keep the most comprehensive/maintained one.
  */
 export const CURATED_SOURCES: CuratedSource[] = [
+  // Core development skills from 4meta5/skills
+  // These are foundational skills for any TypeScript/Rust project
+  {
+    source: {
+      name: '4meta5-skills',
+      url: 'https://github.com/4meta5/skills',
+      type: 'git'
+    },
+    description: 'Core development skills: TDD, code review, refactoring, and workflow',
+    tags: ['typescript', 'ts', 'rust', 'rs', 'cargo', 'testing', 'vitest', 'jest', 'code-review'],
+    skills: [
+      'tdd',
+      'code-review-ts',
+      'code-review-rust',
+      'differential-review',
+      'refactor-suggestions',
+      'repo-hygiene',
+      'rick-rubin',
+      'dogfood',
+      'skill-maker'
+    ],
+    category: 'development',
+    priority: 100
+  },
+
   // Svelte 5 Skills - DEDUPLICATED: kept only the most comprehensive one
   // Removed: claude-svelte5-skill (splinesreticulating), svelte-5-runes (wiesson)
   {
