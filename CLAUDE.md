@@ -43,10 +43,12 @@ Pre-commit runs typecheck + unit tests in parallel.
 - @.claude/skills/code-review-ts/SKILL.md
 - @.claude/skills/differential-review/SKILL.md
 - @.claude/skills/dogfood/SKILL.md
+- @.claude/skills/model-router/SKILL.md
 - @.claude/skills/refactor-suggestions/SKILL.md
 - @.claude/skills/repo-hygiene/SKILL.md
 - @.claude/skills/rick-rubin/SKILL.md
 - @.claude/skills/tdd/SKILL.md
+- @.claude/skills/workflow/SKILL.md
 
 ## Dogfooding
 

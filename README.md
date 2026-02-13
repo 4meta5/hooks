@@ -13,7 +13,7 @@ npx @4meta5/skills-cli scan
 
 - **Scans your project** and recommends relevant skills based on your stack
 - **Installs skills** from curated sources or custom repositories
-- **Validates skills** for quality and correctness
+- **Validates skills** for quality and correctness (including optional `agents/openai.yaml` metadata)
 - **Syncs CLAUDE.md** to keep skill references current
 
 ## Skills
@@ -74,6 +74,12 @@ Recommended Skills:
 | `hygiene` | Detect and clean slop |
 
 Run `skills <command> --help` for command-specific options.
+
+## Skill Metadata
+
+Skills may include optional UI metadata at `<skill-name>/agents/openai.yaml`.
+When present, `skills validate` checks that it parses as YAML and that
+`interface.default_prompt` references `$<skill-name>`.
 
 ## Packages
 

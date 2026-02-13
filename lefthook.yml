@@ -16,6 +16,11 @@ pre-commit:
       run: ./scripts/check-skill-location.sh
       fail_text: "Skills must be at repo root level (<skill-name>/SKILL.md), not in packages/ or elsewhere. See error above."
 
+    agent-metadata-location:
+      glob: "**/agents/openai.yaml"
+      run: ./scripts/check-agent-metadata-location.sh
+      fail_text: "Agent metadata must be at <skill-name>/agents/openai.yaml. See error above."
+
     hook-location:
       glob: "**/*.sh"
       run: ./scripts/check-hook-location.sh

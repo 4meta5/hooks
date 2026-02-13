@@ -341,6 +341,70 @@ extensions: true
       expect(result.errors.some(e => e.includes('extensions'))).toBe(true);
     });
 
+
+
+    it('should validate agents/openai.yaml when present', async () => {
+      const skillDir = join(tempDir, '.claude', 'skills', 'agent-meta-skill');
+      await mkdir(join(skillDir, 'agents'), { recursive: true });
+      await writeFile(
+        join(skillDir, 'SKILL.md'),
+        `---
+name: agent-meta-skill
+description: |
+  A skill with valid agent metadata.
+  Use when validating agents/openai.yaml support.
+---
+
+# Agent Meta Skill
+`,
+        'utf-8'
+      );
+      await writeFile(
+        join(skillDir, 'agents', 'openai.yaml'),
+        `interface:
+  display_name: "Agent Meta Skill"
+  short_description: "Validate agent metadata and prompt wiring"
+  default_prompt: "Use $agent-meta-skill for this task."
+`,
+        'utf-8'
+      );
+
+      const result = await validateSkill(skillDir);
+      expect(result.valid).toBe(true);
+      expect(result.errors).toEqual([]);
+    });
+
+    it('should fail when agents/openai.yaml default_prompt omits skill name', async () => {
+      const skillDir = join(tempDir, '.claude', 'skills', 'bad-agent-meta-skill');
+      await mkdir(join(skillDir, 'agents'), { recursive: true });
+      await writeFile(
+        join(skillDir, 'SKILL.md'),
+        `---
+name: bad-agent-meta-skill
+description: |
+  A skill with invalid agent metadata prompt.
+  Use when validating default_prompt enforcement.
+---
+
+# Bad Agent Meta Skill
+`,
+        'utf-8'
+      );
+      await writeFile(
+        join(skillDir, 'agents', 'openai.yaml'),
+        `interface:
+  display_name: "Bad Agent Meta"
+  short_description: "Invalid prompt because skill token is missing"
+  default_prompt: "Use this skill for this task."
+`,
+        'utf-8'
+      );
+
+      const result = await validateSkill(skillDir);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.includes('default_prompt') && e.includes('$bad-agent-meta-skill'))).toBe(true);
+    });
+
     it('should validate references directory exists if referenced', async () => {
       const skillDir = join(tempDir, '.claude', 'skills', 'with-references');
       await mkdir(skillDir, { recursive: true });

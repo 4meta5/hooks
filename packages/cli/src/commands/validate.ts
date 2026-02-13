@@ -1,6 +1,7 @@
 import { readdir, readFile, stat } from 'fs/promises';
 import { join, basename, isAbsolute } from 'path';
 import { parseFrontmatter, type SkillMetadata } from '@4meta5/skill-loader';
+import { parse as parseYaml } from 'yaml';
 
 /**
  * Slop detection patterns
@@ -75,6 +76,73 @@ interface ValidateOptions {
   cwd?: string;
   path?: string;
   json?: boolean;
+}
+
+
+async function validateAgentMetadata(skillPath: string, skillName: string): Promise<{ errors: string[]; warnings: string[] }> {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const agentMetadataPath = join(skillPath, 'agents', 'openai.yaml');
+
+  try {
+    await stat(agentMetadataPath);
+  } catch {
+    return { errors, warnings };
+  }
+
+  let content = '';
+  try {
+    content = await readFile(agentMetadataPath, 'utf-8');
+  } catch (error) {
+    errors.push(`Failed to read agents/openai.yaml: ${error}`);
+    return { errors, warnings };
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = parseYaml(content);
+  } catch (error) {
+    errors.push(`Invalid agents/openai.yaml: YAML parse error (${error})`);
+    return { errors, warnings };
+  }
+
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    errors.push('Invalid agents/openai.yaml: top-level object is required');
+    return { errors, warnings };
+  }
+
+  const obj = parsed as Record<string, unknown>;
+  const iface = obj.interface;
+  if (!iface || typeof iface !== 'object' || Array.isArray(iface)) {
+    errors.push('Invalid agents/openai.yaml: interface object is required');
+    return { errors, warnings };
+  }
+
+  const interfaceObj = iface as Record<string, unknown>;
+
+  if (interfaceObj.display_name !== undefined && typeof interfaceObj.display_name !== 'string') {
+    errors.push('Invalid agents/openai.yaml: interface.display_name must be a string');
+  }
+
+  if (interfaceObj.short_description !== undefined) {
+    if (typeof interfaceObj.short_description !== 'string') {
+      errors.push('Invalid agents/openai.yaml: interface.short_description must be a string');
+    } else if (interfaceObj.short_description.length < 25 || interfaceObj.short_description.length > 64) {
+      warnings.push('agents/openai.yaml: interface.short_description should be 25-64 chars for UI quality');
+    }
+  }
+
+  if (interfaceObj.default_prompt !== undefined) {
+    if (typeof interfaceObj.default_prompt !== 'string') {
+      errors.push('Invalid agents/openai.yaml: interface.default_prompt must be a string');
+    } else if (!interfaceObj.default_prompt.includes(`$${skillName}`)) {
+      errors.push(`Invalid agents/openai.yaml: interface.default_prompt must mention $${skillName}`);
+    }
+  } else {
+    warnings.push('agents/openai.yaml: missing interface.default_prompt');
+  }
+
+  return { errors, warnings };
 }
 
 /**
@@ -192,6 +260,10 @@ export async function validateSkill(skillPath: string): Promise<ValidationResult
       descriptionScore += 0.25;
     }
   }
+
+  const agentMetadataValidation = await validateAgentMetadata(skillPath, skillName);
+  errors.push(...agentMetadataValidation.errors);
+  warnings.push(...agentMetadataValidation.warnings);
 
   // Check for referenced files that don't exist
   const referenceMatches = body.match(/\[.*?\]\(references\/.*?\)/g);
