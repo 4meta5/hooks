@@ -71,9 +71,26 @@ Recommended Skills:
 | `validate [path]` | Validate skill quality |
 | `update` | Update skills from sources |
 | `sync` | Sync skills to tracked projects |
+| `sync --push` | Install a skill into tracked projects that do not have it yet |
 | `hygiene` | Detect and clean slop |
 
 Run `skills <command> --help` for command-specific options.
+
+## Priority Rollout
+
+Use the local rollout script to update selected hooks/skills from `../skills` into
+priority projects (`../claudette-codes`, `../claudette`) and install
+`paul-graham` for Codex:
+
+```bash
+./scripts/rollout-priority.sh
+```
+
+You can pass explicit project paths:
+
+```bash
+./scripts/rollout-priority.sh ../claudette-codes ../claudette
+```
 
 ## Skill Metadata
 

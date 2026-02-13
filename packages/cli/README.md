@@ -57,6 +57,7 @@ skills show tdd
 | `embed` | Generate skill embeddings |
 | `source list` | List configured skill sources |
 | `source add <url>` | Add a skill repository |
+| `sync <name> --push` | Push a skill to all tracked projects |
 | `stats` | Show usage analytics |
 | `init` | Initialize skills in current project |
 

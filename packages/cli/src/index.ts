@@ -77,6 +77,7 @@ interface SyncOptions {
   all?: boolean;
   dryRun?: boolean;
   cwd?: string;
+  push?: boolean;
 }
 
 interface ProjectsOptions {
@@ -233,6 +234,7 @@ cli
   .command('sync [...names]', 'Sync skills to all tracked projects')
   .option('-a, --all', 'Sync all skills in all projects')
   .option('-d, --dry-run', 'Show what would be updated without making changes')
+  .option('-p, --push', 'Install skills to tracked projects that do not already have them')
   .option('-C, --cwd <path>', 'Source directory for skills (default: current directory)')
   .action(async (names: string[], options: SyncOptions) => {
     await syncCommand(names, options);

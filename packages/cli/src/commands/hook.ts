@@ -467,13 +467,52 @@ async function configureHooksInSettings(hookNames: string[], projectDir: string)
     const eventHooks = hooks[eventType] as Array<{ hooks: Array<{ type: string; command: string }> }>;
 
     const hookCommand = `"$CLAUDE_PROJECT_DIR"/.claude/hooks/${hook.filename}`;
+    const legacyHookCommands = new Set([
+      `.claude/hooks/${hook.filename}`,
+      `${'$CLAUDE_PROJECT_DIR'}/.claude/hooks/${hook.filename}`
+    ]);
 
-    // Check if this hook is already configured
-    const alreadyConfigured = eventHooks.some(entry =>
-      entry.hooks?.some(h => h.command === hookCommand)
-    );
+    let hasCanonical = false;
+    let migratedLegacy = false;
+    let dedupedCanonical = false;
 
-    if (!alreadyConfigured) {
+    for (const entry of eventHooks) {
+      if (!entry.hooks) continue;
+      for (const h of entry.hooks) {
+        if (h.command === hookCommand) {
+          hasCanonical = true;
+        }
+        if (legacyHookCommands.has(h.command)) {
+          h.command = hookCommand;
+          migratedLegacy = true;
+          hasCanonical = true;
+        }
+      }
+    }
+
+    // Keep only one canonical entry for this hook command.
+    let seenCanonical = false;
+    for (const entry of eventHooks) {
+      if (!entry.hooks) continue;
+      const before = entry.hooks.length;
+      entry.hooks = entry.hooks.filter(h => {
+        if (h.command !== hookCommand) return true;
+        if (seenCanonical) return false;
+        seenCanonical = true;
+        return true;
+      });
+      if (entry.hooks.length < before) {
+        dedupedCanonical = true;
+      }
+    }
+    for (let i = eventHooks.length - 1; i >= 0; i--) {
+      if (!eventHooks[i].hooks || eventHooks[i].hooks.length === 0) {
+        eventHooks.splice(i, 1);
+      }
+    }
+    hasCanonical = seenCanonical;
+
+    if (!hasCanonical) {
       eventHooks.push({
         hooks: [
           {
@@ -483,6 +522,10 @@ async function configureHooksInSettings(hookNames: string[], projectDir: string)
         ]
       });
       console.log(`Configured ${hookName} in settings.local.json (${eventType})`);
+    } else if (migratedLegacy) {
+      console.log(`Migrated ${hookName} command format in settings.local.json (${eventType})`);
+    } else if (dedupedCanonical) {
+      console.log(`Deduped ${hookName} command entries in settings.local.json (${eventType})`);
     } else {
       console.log(`${hookName} already configured in settings.local.json`);
     }
@@ -517,8 +560,12 @@ async function unconfigureHookFromSettings(hookName: string, projectDir: string)
   if (!eventHooks) return;
 
   const hookCommand = `"$CLAUDE_PROJECT_DIR"/.claude/hooks/${hook.filename}`;
+  const legacyHookCommands = new Set([
+    `.claude/hooks/${hook.filename}`,
+    `${'$CLAUDE_PROJECT_DIR'}/.claude/hooks/${hook.filename}`
+  ]);
   hooks[eventType] = eventHooks.filter(entry =>
-    !entry.hooks?.some(h => h.command === hookCommand)
+    !entry.hooks?.some(h => h.command === hookCommand || legacyHookCommands.has(h.command))
   );
 
   await writeFile(settingsPath, JSON.stringify(settings, null, 2) + '\n', 'utf-8');
