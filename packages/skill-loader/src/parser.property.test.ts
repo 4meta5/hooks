@@ -9,6 +9,7 @@
 import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
 import { parseFrontmatter, formatSkillMd } from './parser.js';
+import { SKILL_CATEGORIES, type SkillCategory } from './types.js';
 
 // Custom arbitraries for skill-related data
 const skillNameArb = fc.stringMatching(/^[a-z][a-z0-9-]{2,30}$/);
@@ -133,14 +134,14 @@ describe('formatSkillMd property tests', () => {
       fc.property(
         skillNameArb,
         descriptionArb,
-        fc.constantFrom('testing', 'development', 'documentation', 'security'),
+        fc.constantFrom<SkillCategory>(...SKILL_CATEGORIES),
         fc.boolean(),
         bodyContentArb,
         (name, description, category, userInvocable, body) => {
           const metadata = {
             name,
             description,
-            category: category as 'testing' | 'development' | 'documentation' | 'security',
+            category,
             'user-invocable': userInvocable
           };
           const formatted = formatSkillMd(metadata, body);

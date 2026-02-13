@@ -50,6 +50,7 @@ Content that Claude receives when this skill activates.
 | `allowed-tools` | string | - | Comma-separated list of allowed tools |
 | `context` | string | inline | `inline` or `fork` (run in subagent) |
 | `agent` | string | - | Subagent type if context is fork |
+| `extensions` | string | - | Comma-separated list of extensions (e.g. `ext-a, ext-b`) |
 
 ## Description Best Practices
 
@@ -156,6 +157,22 @@ user-invocable: true
 ```
 
 Users can then type `/commit` to invoke the skill directly.
+
+## Extensions
+
+The `extensions` field declares tool extensions the skill uses, as a comma-separated string:
+
+```yaml
+extensions: ext-a, ext-b
+```
+
+Semantics:
+
+- **Absent**: Default behavior (no extensions declared).
+- **Empty string** (`extensions: ""`): Explicitly declares no extensions.
+- **Populated**: Lists specific extensions the skill depends on.
+
+This field is metadata-only. Runtime enforcement is not implemented in hooks.
 
 ## Example: Complete Skill
 

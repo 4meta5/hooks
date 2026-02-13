@@ -46,8 +46,6 @@ describe('scan command', () => {
 
   describe('--cwd option', () => {
     it('should analyze project at specified directory', async () => {
-      // This test verifies that scanCommand accepts cwd option
-      // and analyzes the project at that path instead of process.cwd()
       let output = '';
       const originalLog = console.log;
       console.log = (...args: unknown[]) => {
@@ -60,20 +58,17 @@ describe('scan command', () => {
         console.log = originalLog;
       }
 
-      // Extract JSON from output (skip "Analyzing project..." line)
-      const jsonStart = output.indexOf('{');
-      const jsonOutput = output.slice(jsonStart);
-      const parsed = JSON.parse(jsonOutput);
+      // Output must be pure JSON, parseable from start to end
+      const trimmed = output.trim();
+      const parsed = JSON.parse(trimmed);
 
-      // Should have detected TypeScript and Vitest
       expect(parsed.detected.languages.some((l: { name: string }) => l.name === 'TypeScript')).toBe(
         true
       );
       expect(parsed.detected.testing.some((t: { name: string }) => t.name === 'Vitest')).toBe(true);
     });
 
-    it('should work with explicit cwd matching current directory', async () => {
-      // Test that passing cwd explicitly works the same as the default
+    it('should produce pure JSON output with no preface text', async () => {
       let output = '';
       const originalLog = console.log;
       console.log = (...args: unknown[]) => {
@@ -81,18 +76,38 @@ describe('scan command', () => {
       };
 
       try {
-        // Pass testDir as cwd
         await scanCommand({ cwd: testDir, json: true });
       } finally {
         console.log = originalLog;
       }
 
-      // Extract JSON from output (skip "Analyzing project..." line)
-      const jsonStart = output.indexOf('{');
-      const jsonOutput = output.slice(jsonStart);
-      const parsed = JSON.parse(jsonOutput);
+      const trimmed = output.trim();
 
-      // Should have detected the test project
+      // Must start with { and end with } (pure JSON)
+      expect(trimmed.startsWith('{')).toBe(true);
+      expect(trimmed.endsWith('}')).toBe(true);
+
+      // Must be directly parseable
+      expect(() => JSON.parse(trimmed)).not.toThrow();
+    });
+
+    it('should work with explicit cwd matching current directory', async () => {
+      let output = '';
+      const originalLog = console.log;
+      console.log = (...args: unknown[]) => {
+        output += args.join(' ') + '\n';
+      };
+
+      try {
+        await scanCommand({ cwd: testDir, json: true });
+      } finally {
+        console.log = originalLog;
+      }
+
+      // Output must be pure JSON
+      const trimmed = output.trim();
+      const parsed = JSON.parse(trimmed);
+
       expect(parsed.detected.languages.some((l: { name: string }) => l.name === 'TypeScript')).toBe(
         true
       );

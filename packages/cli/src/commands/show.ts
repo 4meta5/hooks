@@ -37,6 +37,15 @@ export async function showCommand(name: string): Promise<void> {
       console.log(`Agent: ${skill.metadata.agent}`);
     }
 
+    if (skill.metadata.tools) {
+      console.log(`Tools: ${skill.metadata.tools}`);
+    }
+
+    if (skill.metadata.extensions !== undefined) {
+      const value = skill.metadata.extensions.trim();
+      console.log(`Extensions: ${value || '(none)'}`);
+    }
+
     console.log(`Path: ${skill.path}`);
 
     if (skill.supportingFiles && skill.supportingFiles.length > 0) {

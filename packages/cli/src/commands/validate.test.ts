@@ -205,6 +205,28 @@ category: testing
       expect(result.errors).toEqual([]);
     });
 
+    it('should pass for legacy category values supported by validate', async () => {
+      const skillDir = join(tempDir, '.claude', 'skills', 'legacy-category');
+      await mkdir(skillDir, { recursive: true });
+      await writeFile(
+        join(skillDir, 'SKILL.md'),
+        `---
+name: legacy-category
+description: Use when validating compatibility with legacy category values
+category: workflow
+---
+
+# Skill
+`,
+        'utf-8'
+      );
+
+      const result = await validateSkill(skillDir);
+
+      expect(result.valid).toBe(true);
+      expect(result.errors).toEqual([]);
+    });
+
     it('should detect slop patterns in content', async () => {
       const skillDir = join(tempDir, '.claude', 'skills', 'slop-skill');
       await mkdir(skillDir, { recursive: true });
@@ -249,6 +271,74 @@ description: A skill with test-skill naming that indicates it is slop
       expect(result.errors.some(e =>
         e.includes('test-skill') || e.includes('slop') || e.includes('naming')
       )).toBe(true);
+    });
+
+    it('should pass with valid string extensions', async () => {
+      const skillDir = join(tempDir, '.claude', 'skills', 'ext-skill');
+      await mkdir(skillDir, { recursive: true });
+      await writeFile(
+        join(skillDir, 'SKILL.md'),
+        `---
+name: ext-skill
+description: A skill with valid extensions field for testing
+extensions: ext-a, ext-b
+---
+
+# Ext Skill
+`,
+        'utf-8'
+      );
+
+      const result = await validateSkill(skillDir);
+
+      expect(result.valid).toBe(true);
+      expect(result.errors).toEqual([]);
+    });
+
+    it('should fail with non-string extensions (array)', async () => {
+      const skillDir = join(tempDir, '.claude', 'skills', 'bad-ext-skill');
+      await mkdir(skillDir, { recursive: true });
+      await writeFile(
+        join(skillDir, 'SKILL.md'),
+        `---
+name: bad-ext-skill
+description: A skill with invalid extensions type for testing
+extensions:
+  - ext-a
+  - ext-b
+---
+
+# Bad Ext Skill
+`,
+        'utf-8'
+      );
+
+      const result = await validateSkill(skillDir);
+
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.includes('extensions') && e.includes('comma-separated string'))).toBe(true);
+    });
+
+    it('should fail with boolean extensions', async () => {
+      const skillDir = join(tempDir, '.claude', 'skills', 'bool-ext-skill');
+      await mkdir(skillDir, { recursive: true });
+      await writeFile(
+        join(skillDir, 'SKILL.md'),
+        `---
+name: bool-ext-skill
+description: A skill with boolean extensions type for testing
+extensions: true
+---
+
+# Bool Ext Skill
+`,
+        'utf-8'
+      );
+
+      const result = await validateSkill(skillDir);
+
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.includes('extensions'))).toBe(true);
     });
 
     it('should validate references directory exists if referenced', async () => {

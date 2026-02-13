@@ -1,25 +1,6 @@
 import { readdir, readFile, stat } from 'fs/promises';
 import { join, basename, isAbsolute } from 'path';
-import { parse as parseYaml } from 'yaml';
-
-/**
- * Valid skill categories
- */
-const VALID_CATEGORIES = [
-  'testing',
-  'development',
-  'documentation',
-  'refactoring',
-  'security',
-  'performance',
-  'code-quality',
-  'deployment',
-  'database',
-  'framework',
-  'workflow',
-  'memory',
-  'communication'
-] as const;
+import { parseFrontmatter, type SkillMetadata } from '@4meta5/skill-loader';
 
 /**
  * Slop detection patterns
@@ -160,24 +141,15 @@ export async function validateSkill(skillPath: string): Promise<ValidationResult
     }
   }
 
-  // Parse frontmatter
-  const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
-  if (!frontmatterMatch) {
-    errors.push('Missing or invalid frontmatter. SKILL.md must start with YAML frontmatter between --- delimiters.');
-    return {
-      valid: false,
-      errors,
-      warnings,
-      skillName,
-      path: skillPath
-    };
-  }
-
-  let metadata: Record<string, unknown>;
+  // Parse and validate frontmatter using canonical parser from skill-loader
+  let metadata: SkillMetadata;
+  let body: string;
   try {
-    metadata = parseYaml(frontmatterMatch[1]) as Record<string, unknown>;
+    const parsed = parseFrontmatter(content);
+    metadata = parsed.frontmatter;
+    body = parsed.body;
   } catch (error) {
-    errors.push(`Invalid YAML in frontmatter: ${error}`);
+    errors.push(error instanceof Error ? error.message : String(error));
     return {
       valid: false,
       errors,
@@ -185,26 +157,10 @@ export async function validateSkill(skillPath: string): Promise<ValidationResult
       skillName,
       path: skillPath
     };
-  }
-
-  // Check required fields
-  if (!metadata.name) {
-    errors.push('Missing required field: name');
-  }
-
-  if (!metadata.description) {
-    errors.push('Missing required field: description');
-  }
-
-  // Validate category if present
-  if (metadata.category) {
-    if (!VALID_CATEGORIES.includes(metadata.category as typeof VALID_CATEGORIES[number])) {
-      errors.push(`Invalid category "${metadata.category}". Must be one of: ${VALID_CATEGORIES.join(', ')}`);
-    }
   }
 
   // Quality checks for description
-  const description = metadata.description as string | undefined;
+  const description = metadata.description;
   let descriptionScore = 0;
   let hasTriggerConditions = false;
   let hasSpecificContext = false;
@@ -238,7 +194,6 @@ export async function validateSkill(skillPath: string): Promise<ValidationResult
   }
 
   // Check for referenced files that don't exist
-  const body = frontmatterMatch[2];
   const referenceMatches = body.match(/\[.*?\]\(references\/.*?\)/g);
   if (referenceMatches && referenceMatches.length > 0) {
     const referencesDir = join(skillPath, 'references');

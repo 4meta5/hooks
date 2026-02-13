@@ -1,13 +1,27 @@
 /**
+ * Canonical supported skill categories.
+ * Keep in sync with CLI validation expectations to prevent compatibility regressions.
+ */
+export const SKILL_CATEGORIES = [
+  'testing',
+  'development',
+  'documentation',
+  'refactoring',
+  'security',
+  'performance',
+  'code-quality',
+  'deployment',
+  'database',
+  'framework',
+  'workflow',
+  'memory',
+  'communication'
+] as const;
+
+/**
  * Category classification for skills
  */
-export type SkillCategory =
-  | 'testing'
-  | 'development'
-  | 'documentation'
-  | 'refactoring'
-  | 'security'
-  | 'performance';
+export type SkillCategory = typeof SKILL_CATEGORIES[number];
 
 /**
  * Metadata extracted from SKILL.md frontmatter
@@ -21,6 +35,8 @@ export interface SkillMetadata {
   'allowed-tools'?: string;
   context?: 'fork' | 'inline';
   agent?: string;
+  tools?: string;
+  extensions?: string;
 }
 
 /**

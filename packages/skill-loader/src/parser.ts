@@ -1,23 +1,11 @@
 import { parse as parseYaml } from 'yaml';
-import type { SkillMetadata, ParsedFrontmatter, SkillCategory } from './types.js';
-
-/**
- * Valid skill categories for validation
- */
-const VALID_CATEGORIES: readonly SkillCategory[] = [
-  'testing',
-  'development',
-  'documentation',
-  'refactoring',
-  'security',
-  'performance',
-];
+import { SKILL_CATEGORIES, type SkillMetadata, type ParsedFrontmatter, type SkillCategory } from './types.js';
 
 /**
  * Type guard to check if a value is a valid SkillCategory
  */
 function isValidCategory(value: unknown): value is SkillCategory {
-  return typeof value === 'string' && VALID_CATEGORIES.includes(value as SkillCategory);
+  return typeof value === 'string' && SKILL_CATEGORIES.includes(value as SkillCategory);
 }
 
 /**
@@ -49,7 +37,7 @@ function validateFrontmatter(parsed: unknown): SkillMetadata {
   // Validate optional category if present
   if (obj.category !== undefined && !isValidCategory(obj.category)) {
     throw new Error(
-      `Invalid SKILL.md: invalid category "${obj.category}". Must be one of: ${VALID_CATEGORIES.join(', ')}`
+      `Invalid SKILL.md: invalid category "${obj.category}". Must be one of: ${SKILL_CATEGORIES.join(', ')}`
     );
   }
 
@@ -77,6 +65,15 @@ function validateFrontmatter(parsed: unknown): SkillMetadata {
   }
   if (typeof obj.agent === 'string') {
     metadata.agent = obj.agent;
+  }
+  if (typeof obj.tools === 'string') {
+    metadata.tools = obj.tools;
+  }
+  if (obj.extensions !== undefined) {
+    if (typeof obj.extensions !== 'string') {
+      throw new Error('Invalid SKILL.md: "extensions" field must be a comma-separated string');
+    }
+    metadata.extensions = obj.extensions;
   }
 
   return metadata;

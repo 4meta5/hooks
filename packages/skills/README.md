@@ -150,6 +150,7 @@ interface SkillMetadata {
   'allowed-tools'?: string;
   context?: 'fork' | 'inline';
   agent?: string;
+  extensions?: string;
 }
 
 type SkillCategory =

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseFrontmatter, formatSkillMd } from './parser.js';
+import { SKILL_CATEGORIES } from './types.js';
 
 describe('parseFrontmatter', () => {
   it('parses valid SKILL.md content', () => {
@@ -142,6 +143,89 @@ Body`;
     expect(() => parseFrontmatter(content)).toThrow(/description.*string|invalid.*description/i);
   });
 
+  it('should preserve extensions when it is a string', () => {
+    const content = `---
+name: ext-skill
+description: A skill with extensions
+extensions: ext-a, ext-b
+---
+
+Body`;
+
+    const result = parseFrontmatter(content);
+
+    expect(result.frontmatter.extensions).toBe('ext-a, ext-b');
+  });
+
+  it('should not include extensions when absent', () => {
+    const content = `---
+name: no-ext
+description: A skill without extensions
+---
+
+Body`;
+
+    const result = parseFrontmatter(content);
+
+    expect(result.frontmatter.extensions).toBeUndefined();
+  });
+
+  it('should preserve empty string extensions', () => {
+    const content = `---
+name: empty-ext
+description: A skill with empty extensions
+extensions: ""
+---
+
+Body`;
+
+    const result = parseFrontmatter(content);
+
+    expect(result.frontmatter.extensions).toBe('');
+  });
+
+  it('should throw on non-string extensions (array)', () => {
+    const content = `---
+name: bad-ext
+description: A skill with array extensions
+extensions:
+  - ext-a
+  - ext-b
+---
+
+Body`;
+
+    expect(() => parseFrontmatter(content)).toThrow(/extensions.*string/i);
+  });
+
+  it('should parse tools field from agent definitions', () => {
+    const content = `---
+name: function-analyzer
+description: Performs per-function deep analysis
+tools: Read, Grep, Glob
+---
+
+Agent instructions here.`;
+
+    const result = parseFrontmatter(content);
+
+    expect(result.frontmatter.name).toBe('function-analyzer');
+    expect(result.frontmatter.tools).toBe('Read, Grep, Glob');
+  });
+
+  it('should not include tools when absent', () => {
+    const content = `---
+name: no-tools
+description: A skill without tools
+---
+
+Body`;
+
+    const result = parseFrontmatter(content);
+
+    expect(result.frontmatter.tools).toBeUndefined();
+  });
+
   it('should throw on invalid category value', () => {
     const content = `---
 name: valid-name
@@ -152,6 +236,21 @@ category: not-a-valid-category
 Body`;
 
     expect(() => parseFrontmatter(content)).toThrow(/invalid.*category/i);
+  });
+
+  it('should accept all supported categories', () => {
+    for (const category of SKILL_CATEGORIES) {
+      const content = `---
+name: category-${category}
+description: A skill validating category compatibility behavior
+category: ${category}
+---
+
+Body`;
+
+      const result = parseFrontmatter(content);
+      expect(result.frontmatter.category).toBe(category);
+    }
   });
 });
 

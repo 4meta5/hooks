@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtemp, rm, readFile, mkdir, stat } from 'fs/promises';
+import { mkdtemp, rm, readFile, mkdir, stat, readdir } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { getProjectInstallation, untrackProjectInstallation } from '../config.js';
@@ -198,6 +198,144 @@ describe('hook command', () => {
           entry.hooks?.some((h: { command: string }) => h.command.includes('usage-tracker.sh'))
       );
       expect(hookConfigured).toBe(true);
+    });
+  });
+
+  describe('setup-shims hook', () => {
+    afterEach(async () => {
+      await untrackProjectInstallation(targetDir, 'setup-shims', 'hook');
+    });
+
+    it('should install setup-shims hook and shims directory', async () => {
+      const { hookCommand } = await import('./hook.js');
+
+      await hookCommand('add', ['setup-shims'], { cwd: targetDir });
+
+      // Verify main hook script
+      const hookPath = join(targetDir, '.claude', 'hooks', 'setup-shims.sh');
+      const hookStat = await stat(hookPath);
+      expect(hookStat.isFile()).toBe(true);
+
+      // Verify shims directory and skills shim
+      const shimPath = join(targetDir, '.claude', 'hooks', 'shims', 'skills');
+      const shimStat = await stat(shimPath);
+      expect(shimStat.isFile()).toBe(true);
+
+      // Verify shim is executable
+      const isExecutable = (shimStat.mode & 0o111) !== 0;
+      expect(isExecutable).toBe(true);
+    });
+
+    it('should configure as SessionStart hook in settings.local.json', async () => {
+      const { hookCommand } = await import('./hook.js');
+
+      await hookCommand('add', ['setup-shims'], { cwd: targetDir });
+
+      const settingsPath = join(targetDir, '.claude', 'settings.local.json');
+      const settingsContent = await readFile(settingsPath, 'utf-8');
+      const settings = JSON.parse(settingsContent);
+
+      // Must be under SessionStart, not UserPromptSubmit
+      expect(settings.hooks.SessionStart).toBeDefined();
+      expect(settings.hooks.SessionStart.length).toBeGreaterThan(0);
+
+      const hookConfigured = settings.hooks.SessionStart.some(
+        (entry: { hooks: Array<{ command: string }> }) =>
+          entry.hooks?.some((h: { command: string }) => h.command.includes('setup-shims.sh'))
+      );
+      expect(hookConfigured).toBe(true);
+
+      // Should NOT appear under UserPromptSubmit
+      const wrongPlacement = settings.hooks.UserPromptSubmit?.some(
+        (entry: { hooks: Array<{ command: string }> }) =>
+          entry.hooks?.some((h: { command: string }) => h.command.includes('setup-shims.sh'))
+      );
+      expect(wrongPlacement).toBeFalsy();
+    });
+
+    it('should contain prerequisite guard for node', async () => {
+      const { hookCommand } = await import('./hook.js');
+
+      await hookCommand('add', ['setup-shims'], { cwd: targetDir });
+
+      const hookPath = join(targetDir, '.claude', 'hooks', 'setup-shims.sh');
+      const content = await readFile(hookPath, 'utf-8');
+
+      // Must guard on node being available (shim needs it)
+      expect(content).toContain('command -v node');
+    });
+
+    it('should remove only managed shim files and preserve user files on uninstall', async () => {
+      const { hookCommand } = await import('./hook.js');
+      const { writeFile } = await import('fs/promises');
+
+      // Install first
+      await hookCommand('add', ['setup-shims'], { cwd: targetDir });
+
+      const shimsDir = join(targetDir, '.claude', 'hooks', 'shims');
+
+      // Add a user-managed file to the shims directory
+      const userShimPath = join(shimsDir, 'custom-shim');
+      await writeFile(userShimPath, '#!/bin/bash\necho custom', 'utf-8');
+
+      // Remove hook
+      await hookCommand('remove', ['setup-shims'], { cwd: targetDir });
+
+      // Verify main hook file is gone
+      await expect(stat(join(targetDir, '.claude', 'hooks', 'setup-shims.sh'))).rejects.toThrow();
+
+      // Verify managed shim file is gone
+      await expect(stat(join(shimsDir, 'skills'))).rejects.toThrow();
+
+      // Verify user-managed file is PRESERVED
+      const userStat = await stat(userShimPath);
+      expect(userStat.isFile()).toBe(true);
+
+      // Verify shims directory still exists (because user file is in it)
+      const shimsDirStat = await stat(shimsDir);
+      expect(shimsDirStat.isDirectory()).toBe(true);
+    });
+
+    it('should remove empty sidecar directories on uninstall', async () => {
+      const { hookCommand } = await import('./hook.js');
+
+      // Install first
+      await hookCommand('add', ['setup-shims'], { cwd: targetDir });
+
+      const shimsDir = join(targetDir, '.claude', 'hooks', 'shims');
+      const shimsDirStat = await stat(shimsDir);
+      expect(shimsDirStat.isDirectory()).toBe(true);
+
+      // Remove hook (no user files added)
+      await hookCommand('remove', ['setup-shims'], { cwd: targetDir });
+
+      // Verify main hook file is gone
+      await expect(stat(join(targetDir, '.claude', 'hooks', 'setup-shims.sh'))).rejects.toThrow();
+
+      // Verify empty shims directory is also cleaned up
+      await expect(stat(shimsDir)).rejects.toThrow();
+    });
+
+    it('should remove SessionStart entry from settings when uninstalling', async () => {
+      const { hookCommand } = await import('./hook.js');
+
+      await hookCommand('add', ['setup-shims'], { cwd: targetDir });
+
+      // Verify it was added
+      const settingsPath = join(targetDir, '.claude', 'settings.local.json');
+      let settings = JSON.parse(await readFile(settingsPath, 'utf-8'));
+      expect(settings.hooks.SessionStart.length).toBeGreaterThan(0);
+
+      // Remove hook
+      await hookCommand('remove', ['setup-shims'], { cwd: targetDir });
+
+      // Verify SessionStart entry was removed from settings
+      settings = JSON.parse(await readFile(settingsPath, 'utf-8'));
+      const stillConfigured = settings.hooks.SessionStart?.some(
+        (entry: { hooks: Array<{ command: string }> }) =>
+          entry.hooks?.some((h: { command: string }) => h.command.includes('setup-shims.sh'))
+      );
+      expect(stillConfigured).toBeFalsy();
     });
   });
 

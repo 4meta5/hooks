@@ -38,7 +38,9 @@ export async function scanCommand(options: ScanOptions = {}): Promise<void> {
     assertTestSafeProjectPath(projectPath, 'write project');
   }
 
-  console.log('Analyzing project...\n');
+  if (!options.json) {
+    console.log('Analyzing project...\n');
+  }
 
   // Analyze the project
   const analysis = await analyzeProject(projectPath);

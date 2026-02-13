@@ -26,11 +26,20 @@ function getProjectHooksDir(cwd: string): string {
   return join(cwd, '.claude', 'hooks');
 }
 
+type HookType = 'UserPromptSubmit' | 'PreToolUse' | 'SessionStart';
+
+interface BundledHook {
+  filename: string;
+  content: string;
+  hookType?: HookType; // default: UserPromptSubmit
+  additionalFiles?: Array<{ relativePath: string; content: string; executable?: boolean }>;
+}
+
 /**
  * Bundled hooks with their content
  * These are embedded directly to avoid file path issues
  */
-const BUNDLED_HOOKS: Record<string, { filename: string; content: string }> = {
+const BUNDLED_HOOKS: Record<string, BundledHook> = {
   'usage-tracker': {
     filename: 'usage-tracker.sh',
     content: `#!/bin/bash
@@ -254,6 +263,72 @@ fi
 # Always exit successfully to not block the prompt
 exit 0
 `
+  },
+  'setup-shims': {
+    filename: 'setup-shims.sh',
+    hookType: 'SessionStart',
+    content: `#!/usr/bin/env bash
+set -euo pipefail
+
+# Setup Shims Hook - PATH-prepended command interception
+# Registered as SessionStart hook. Prepends shims directory to PATH
+# via CLAUDE_ENV_FILE so shim wrappers intercept target commands.
+
+# Guard: node must be available (shims may need it to run project-local binaries)
+command -v node &>/dev/null || exit 0
+
+# Guard: CLAUDE_ENV_FILE must be set by the runtime
+if [[ -z "\${CLAUDE_ENV_FILE:-}" ]]; then
+  exit 0
+fi
+
+shims_dir="$(cd "$(dirname "$0")/shims" && pwd)" || {
+  echo "setup-shims: shims directory not found" >&2
+  exit 1
+}
+
+# Only prepend if shims directory has executables
+if ls "\${shims_dir}"/* &>/dev/null; then
+  echo "export PATH=\\"\${shims_dir}:\\\${PATH}\\"" >>"\$CLAUDE_ENV_FILE"
+fi
+`,
+    additionalFiles: [
+      {
+        relativePath: 'shims/skills',
+        executable: true,
+        content: `#!/usr/bin/env bash
+set -euo pipefail
+
+# Skills CLI shim - ensures the project-local CLI is used over any global install.
+# When setup-shims.sh prepends this directory to PATH, this wrapper intercepts
+# bare \\\`skills\\\` invocations and routes them to the project-local binary.
+
+# Find the real skills binary by skipping this shim's directory in PATH
+shim_dir="$(cd "$(dirname "$0")" && pwd)"
+
+# If CLAUDE_PROJECT_DIR is set, prefer the project-local binary
+if [[ -n "\${CLAUDE_PROJECT_DIR:-}" ]]; then
+  local_bin="\${CLAUDE_PROJECT_DIR}/packages/cli/bin/skills.js"
+  if [[ -x "$local_bin" ]]; then
+    exec node "$local_bin" "$@"
+  fi
+fi
+
+# Otherwise, walk PATH to find the real skills binary (skip this shim)
+IFS=: read -ra path_entries <<<"\${PATH:-}"
+for dir in "\${path_entries[@]}"; do
+  resolved="$(cd "$dir" 2>/dev/null && pwd)" || continue
+  [[ "$resolved" == "$shim_dir" ]] && continue
+  if [[ -x "$dir/skills" ]]; then
+    exec "$dir/skills" "$@"
+  fi
+done
+
+echo "ERROR: real skills binary not found on PATH" >&2
+exit 127
+`
+      }
+    ]
   }
 };
 
@@ -267,7 +342,7 @@ function listBundledHooks(): string[] {
 /**
  * Get a bundled hook by name
  */
-function getBundledHook(name: string): { filename: string; content: string } | undefined {
+function getBundledHook(name: string): BundledHook | undefined {
   return BUNDLED_HOOKS[name];
 }
 
@@ -329,6 +404,19 @@ async function addHooks(names: string[], projectDir: string): Promise<void> {
     await writeFile(hookPath, hook.content, 'utf-8');
     await chmod(hookPath, 0o755); // Make executable
 
+    // Install additional files (e.g., shims directory)
+    if (hook.additionalFiles) {
+      for (const file of hook.additionalFiles) {
+        const filePath = join(hooksDir, file.relativePath);
+        await mkdir(dirname(filePath), { recursive: true });
+        await writeFile(filePath, file.content, 'utf-8');
+        if (file.executable) {
+          await chmod(filePath, 0o755);
+        }
+        console.log(`+ ${file.relativePath}`);
+      }
+    }
+
     // Track hook installation in project
     await trackProjectInstallation(projectDir, name, 'hook');
 
@@ -366,25 +454,27 @@ async function configureHooksInSettings(hookNames: string[], projectDir: string)
   }
   const hooks = settings.hooks as Record<string, unknown>;
 
-  if (!hooks.UserPromptSubmit) {
-    hooks.UserPromptSubmit = [];
-  }
-  const userPromptSubmitHooks = hooks.UserPromptSubmit as Array<{ hooks: Array<{ type: string; command: string }> }>;
-
-  // Add each hook if not already present
+  // Add each hook if not already present, routing to the correct event type
   for (const hookName of hookNames) {
     const hook = getBundledHook(hookName);
     if (!hook) continue;
 
+    const eventType: HookType = hook.hookType || 'UserPromptSubmit';
+
+    if (!hooks[eventType]) {
+      hooks[eventType] = [];
+    }
+    const eventHooks = hooks[eventType] as Array<{ hooks: Array<{ type: string; command: string }> }>;
+
     const hookCommand = `"$CLAUDE_PROJECT_DIR"/.claude/hooks/${hook.filename}`;
 
     // Check if this hook is already configured
-    const alreadyConfigured = userPromptSubmitHooks.some(entry =>
+    const alreadyConfigured = eventHooks.some(entry =>
       entry.hooks?.some(h => h.command === hookCommand)
     );
 
     if (!alreadyConfigured) {
-      userPromptSubmitHooks.push({
+      eventHooks.push({
         hooks: [
           {
             type: 'command',
@@ -392,13 +482,45 @@ async function configureHooksInSettings(hookNames: string[], projectDir: string)
           }
         ]
       });
-      console.log(`Configured ${hookName} in settings.local.json`);
+      console.log(`Configured ${hookName} in settings.local.json (${eventType})`);
     } else {
       console.log(`${hookName} already configured in settings.local.json`);
     }
   }
 
   // Write updated settings
+  await writeFile(settingsPath, JSON.stringify(settings, null, 2) + '\n', 'utf-8');
+}
+
+/**
+ * Remove a hook's entry from settings.local.json
+ */
+async function unconfigureHookFromSettings(hookName: string, projectDir: string): Promise<void> {
+  const settingsPath = join(projectDir, '.claude', 'settings.local.json');
+
+  let settings: Record<string, unknown>;
+  try {
+    const content = await readFile(settingsPath, 'utf-8');
+    settings = JSON.parse(content);
+  } catch {
+    return; // No settings file, nothing to unconfigure
+  }
+
+  const hooks = settings.hooks as Record<string, unknown> | undefined;
+  if (!hooks) return;
+
+  const hook = getBundledHook(hookName);
+  if (!hook) return;
+
+  const eventType: HookType = hook.hookType || 'UserPromptSubmit';
+  const eventHooks = hooks[eventType] as Array<{ hooks: Array<{ type: string; command: string }> }> | undefined;
+  if (!eventHooks) return;
+
+  const hookCommand = `"$CLAUDE_PROJECT_DIR"/.claude/hooks/${hook.filename}`;
+  hooks[eventType] = eventHooks.filter(entry =>
+    !entry.hooks?.some(h => h.command === hookCommand)
+  );
+
   await writeFile(settingsPath, JSON.stringify(settings, null, 2) + '\n', 'utf-8');
 }
 
@@ -440,7 +562,7 @@ async function removeHooks(names: string[], projectDir: string): Promise<void> {
     return;
   }
 
-  const { unlink } = await import('fs/promises');
+  const { unlink, rmdir } = await import('fs/promises');
 
   for (const name of names) {
     const hook = getBundledHook(name);
@@ -449,6 +571,23 @@ async function removeHooks(names: string[], projectDir: string): Promise<void> {
 
     try {
       await unlink(hookPath);
+
+      // Clean up only the files we installed, then rmdir if empty
+      if (hook?.additionalFiles) {
+        const dirs = new Set<string>();
+        for (const file of hook.additionalFiles) {
+          const filePath = join(hooksDir, file.relativePath);
+          try { await unlink(filePath); } catch { /* already gone */ }
+          dirs.add(dirname(filePath));
+        }
+        // Only remove parent directories if they are now empty
+        for (const dir of dirs) {
+          try { await rmdir(dir); } catch { /* not empty or already gone */ }
+        }
+      }
+
+      // Remove hook entry from settings.local.json
+      await unconfigureHookFromSettings(name, projectDir);
 
       // Untrack hook from project
       await untrackProjectInstallation(projectDir, name, 'hook');
@@ -467,6 +606,7 @@ function listAvailableHooks(): void {
   console.log('Available hooks:');
   for (const name of listBundledHooks()) {
     const hook = getBundledHook(name);
-    console.log(`  - ${name} (${hook?.filename})`);
+    const eventType = hook?.hookType || 'UserPromptSubmit';
+    console.log(`  - ${name} (${hook?.filename}) [${eventType}]`);
   }
 }
