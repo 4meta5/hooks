@@ -116,6 +116,7 @@ Available hooks:
 
 | Hook | Purpose |
 |------|---------|
+| `setup-shims` | Prepends project-local shims to PATH (SessionStart) |
 | `skill-forced-eval` | Forces Claude to evaluate and activate relevant skills |
 | `semantic-router` | Matches prompts to skills using embeddings |
 | `usage-tracker` | Logs skill activations to `~/.claude/usage.jsonl` |

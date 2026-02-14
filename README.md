@@ -72,6 +72,7 @@ Recommended Skills:
 | `update` | Update skills from sources |
 | `sync` | Sync skills to tracked projects |
 | `sync --push` | Install a skill into tracked projects that do not have it yet |
+| `hook` | Manage Claude Code hooks |
 | `hygiene` | Detect and clean slop |
 
 Run `skills <command> --help` for command-specific options.
