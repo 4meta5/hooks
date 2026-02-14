@@ -23,7 +23,7 @@ const descriptionArb = fc.stringMatching(/^[A-Za-z][A-Za-z0-9]{4,20}$/)
 
 // Body content: simple alphanumeric
 const bodyContentArb = fc.stringMatching(/^[a-z0-9]{0,50}$/);
-const categoryArb = fc.constantFrom<SkillCategory>('testing', 'development', 'documentation', 'refactoring', 'security', 'performance');
+const categoryArb = fc.constantFrom<SkillCategory>('meta', 'audit', 'principles', 'habits', 'hot');
 
 // Generate valid skill data
 const skillDataArb = fc.record({
@@ -121,8 +121,8 @@ describe('createSkillsLibrary property tests', () => {
     it('should filter by category correctly', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.array(skillDataArb.map(s => ({ ...s, category: 'testing' as SkillCategory })), { minLength: 1, maxLength: 3 }),
-          fc.array(skillDataArb.map(s => ({ ...s, category: 'development' as SkillCategory })), { minLength: 1, maxLength: 3 }),
+          fc.array(skillDataArb.map(s => ({ ...s, category: 'principles' as SkillCategory })), { minLength: 1, maxLength: 3 }),
+          fc.array(skillDataArb.map(s => ({ ...s, category: 'audit' as SkillCategory })), { minLength: 1, maxLength: 3 }),
           async (testingSkills, devSkills) => {
             await withTempDirs(async (projectDir, skillsDir) => {
               const allSkills = [
@@ -138,17 +138,17 @@ describe('createSkillsLibrary property tests', () => {
 
               const library = createSkillsLibrary({ cwd: projectDir });
 
-              const filteredTesting = await library.listSkills('testing');
-              const filteredDev = await library.listSkills('development');
+              const filteredTesting = await library.listSkills('principles');
+              const filteredDev = await library.listSkills('audit');
 
               expect(filteredTesting.length).toBe(testingSkills.length);
               expect(filteredDev.length).toBe(devSkills.length);
 
               filteredTesting.forEach((skill: Skill) => {
-                expect(skill.metadata.category).toBe('testing');
+                expect(skill.metadata.category).toBe('principles');
               });
               filteredDev.forEach((skill: Skill) => {
-                expect(skill.metadata.category).toBe('development');
+                expect(skill.metadata.category).toBe('audit');
               });
             });
           }

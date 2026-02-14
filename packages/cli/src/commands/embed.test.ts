@@ -86,7 +86,7 @@ description: A valid skill
       await writeFile(join(skillDir, 'SKILL.md'), `---
 name: parse-test-skill
 description: A skill for parsing tests
-category: testing
+category: principles
 ---
 
 # Parse Test Skill
@@ -99,7 +99,7 @@ Content here.
 
       expect(result.name).toBe('parse-test-skill');
       expect(result.description).toBe('A skill for parsing tests');
-      expect(result.category).toBe('testing');
+      expect(result.category).toBe('principles');
     });
 
     it('should handle multi-line descriptions', async () => {

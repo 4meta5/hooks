@@ -118,7 +118,7 @@ Skill instructions and content here.
 
 ### Optional Fields
 
-- `category`: One of `testing`, `development`, `documentation`, `refactoring`, `security`, `performance`
+- `category`: One of `meta`, `audit`, `principles`, `habits`, `hot`
 - `user-invocable`: Whether skill can be invoked via `/skill-name`
 - `disable-model-invocation`: Prevent automatic loading
 - `allowed-tools`: Comma-separated list of allowed tools
@@ -147,12 +147,11 @@ interface SkillMetadata {
 }
 
 type SkillCategory =
-  | 'testing'
-  | 'development'
-  | 'documentation'
-  | 'refactoring'
-  | 'security'
-  | 'performance';
+  | 'meta'
+  | 'audit'
+  | 'principles'
+  | 'habits'
+  | 'hot';
 ```
 
 ## License

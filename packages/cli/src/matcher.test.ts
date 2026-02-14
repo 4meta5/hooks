@@ -272,7 +272,7 @@ describe('Category-based Deduplication', () => {
       r.tags.some(t => t.includes('svelte')) && r.source === 'curated'
     );
     expect(svelteRecs.length).toBeGreaterThan(0);
-    expect(svelteRecs[0].category).toBe('framework');
+    expect(svelteRecs[0].category).toBe('hot');
   });
 
   it('includes priority in curated skill recommendations', async () => {
@@ -300,7 +300,7 @@ describe('Category-based Deduplication', () => {
       reason: 'test',
       source: 'curated',
       tags: ['test'],
-      category: 'testing',
+      category: 'principles',
       priority: 10,
       alternatives: [
         { name: 'alt-skill-1', source: 'curated' },
@@ -323,7 +323,7 @@ describe('Category-based Deduplication', () => {
       reason: 'test',
       source: 'curated',
       tags: ['a', 'b'],
-      category: 'testing',
+      category: 'principles',
       priority: 10
     };
 
@@ -333,7 +333,7 @@ describe('Category-based Deduplication', () => {
       reason: 'test',
       source: 'curated',
       tags: ['b', 'a'],  // Same tags, different order
-      category: 'testing',
+      category: 'principles',
       priority: 5
     };
 

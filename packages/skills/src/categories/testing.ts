@@ -1,17 +1,13 @@
 import type { SkillCategory } from '../types.js';
 
 /**
- * Testing category metadata
+ * Legacy category helper retained for API stability.
+ * Maps legacy "testing" helper concepts to canonical "principles".
  */
-export const testingCategory: SkillCategory = 'testing';
+export const testingCategory: SkillCategory = 'principles';
 
-/**
- * Skills that belong to the testing category
- */
 export const testingSkills = [
-  'tdd',
-  'unit-testing',
-  'integration-testing'
+  'tdd'
 ] as const;
 
 export type TestingSkill = typeof testingSkills[number];

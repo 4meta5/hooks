@@ -109,12 +109,11 @@ Filter and organize skills by category:
 import type { SkillCategory } from '@4meta5/skills';
 
 const categories: SkillCategory[] = [
-  'testing',
-  'development',
-  'documentation',
-  'refactoring',
-  'security',
-  'performance'
+  'meta',
+  'audit',
+  'principles',
+  'habits',
+  'hot'
 ];
 ```
 
@@ -154,12 +153,11 @@ interface SkillMetadata {
 }
 
 type SkillCategory =
-  | 'testing'
-  | 'development'
-  | 'documentation'
-  | 'refactoring'
-  | 'security'
-  | 'performance';
+  | 'meta'
+  | 'audit'
+  | 'principles'
+  | 'habits'
+  | 'hot';
 
 interface InstallOptions {
   location: 'project' | 'user';

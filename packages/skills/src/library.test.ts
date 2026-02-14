@@ -22,7 +22,7 @@ describe('createSkillsLibrary', () => {
     await writeFile(join(projectSkillsDir, 'test-skill', 'SKILL.md'), `---
 name: test-skill
 description: A test skill
-category: testing
+category: principles
 ---
 
 Test skill content`);
@@ -75,15 +75,15 @@ Content`);
       await writeFile(join(projectSkillsDir, 'dev-skill', 'SKILL.md'), `---
 name: dev-skill
 description: Development skill
-category: development
+category: audit
 ---
 
 Content`);
 
       const library = createSkillsLibrary({ cwd: projectDir });
 
-      const testingSkills = await library.listSkills('testing');
-      const devSkills = await library.listSkills('development');
+      const testingSkills = await library.listSkills('principles');
+      const devSkills = await library.listSkills('audit');
 
       expect(testingSkills.map((s: Skill) => s.metadata.name)).toContain('test-skill');
       expect(testingSkills.map((s: Skill) => s.metadata.name)).not.toContain('dev-skill');

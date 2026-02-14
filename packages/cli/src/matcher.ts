@@ -244,7 +244,7 @@ function inferCategory(
     'refactor', 'clean-code', 'complexity'
   ];
   if (matchesKeyword(codeQualityKeywords) || tags.some(t => codeQualityKeywords.includes(t))) {
-    return 'code-quality';
+    return 'audit';
   }
 
   // Security category - specific security tools and vulnerabilities
@@ -261,13 +261,13 @@ function inferCategory(
   if (matchesKeyword(securityKeywords) ||
       securityNamePatterns.some(p => name.toLowerCase().includes(p)) ||
       tags.some(t => securityKeywords.includes(t))) {
-    return 'security';
+    return 'audit';
   }
 
   // Documentation category - check before testing
   const documentationKeywords = ['documentation', 'docs', 'readme', 'handbook', 'guide'];
   if (matchesKeyword(documentationKeywords) || tags.some(t => documentationKeywords.includes(t))) {
-    return 'documentation';
+    return 'habits';
   }
 
   // Testing category - specific testing frameworks and patterns
@@ -277,35 +277,35 @@ function inferCategory(
     'coverage', 'assertion', 'mock', 'stub', 'test-driven'
   ];
   if (matchesKeyword(testingKeywords) || tags.some(t => testingKeywords.includes(t))) {
-    return 'testing';
+    return 'principles';
   }
   // Match 'testing' as a word, but not just 'test' alone (too generic)
   if (/\btesting\b/i.test(combined) && !combined.includes('constant-time')) {
-    return 'testing';
+    return 'principles';
   }
 
   // Framework category
   const frameworkKeywords = ['svelte', 'react', 'vue', 'angular', 'nextjs', 'nuxt', 'sveltekit', 'hono', 'express', 'fastify'];
   if (matchesKeyword(frameworkKeywords) || tags.some(t => frameworkKeywords.includes(t))) {
-    return 'framework';
+    return 'hot';
   }
 
   // Deployment category
   const deploymentKeywords = ['cloudflare', 'workers', 'aws', 'lambda', 'cdk', 'sam', 'docker', 'kubernetes', 'deploy', 'vercel'];
   if (matchesKeyword(deploymentKeywords) || tags.some(t => deploymentKeywords.includes(t))) {
-    return 'deployment';
+    return 'hot';
   }
 
   // Database category
   const databaseKeywords = ['database', 'postgres', 'postgresql', 'mysql', 'sqlite', 'mongo', 'redis', 'drizzle', 'prisma', 'orm', 'neon', 'supabase'];
   if (matchesKeyword(databaseKeywords) || tags.some(t => databaseKeywords.includes(t))) {
-    return 'database';
+    return 'hot';
   }
 
   // Workflow category
   const workflowKeywords = ['workflow', 'automation'];
   if (matchesKeyword(workflowKeywords) || tags.some(t => workflowKeywords.includes(t))) {
-    return 'workflow';
+    return 'habits';
   }
 
   return undefined;

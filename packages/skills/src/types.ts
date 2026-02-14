@@ -3,29 +3,15 @@
  * Keep aligned with @4meta5/skill-loader parser validation.
  */
 export const SKILL_CATEGORIES = [
-  'testing',
-  'development',
-  'documentation',
-  'refactoring',
-  'security',
-  'performance',
-  'code-quality',
-  'deployment',
-  'database',
-  'framework',
-  'workflow',
-  'memory',
-  'communication'
+  'meta',
+  'audit',
+  'principles',
+  'habits',
+  'hot'
 ] as const;
 
-/**
- * Category classification for skills
- */
 export type SkillCategory = typeof SKILL_CATEGORIES[number];
 
-/**
- * Metadata extracted from SKILL.md frontmatter
- */
 export interface SkillMetadata {
   name: string;
   description: string;
@@ -39,9 +25,6 @@ export interface SkillMetadata {
   extensions?: string;
 }
 
-/**
- * A fully loaded skill with content and metadata
- */
 export interface Skill {
   metadata: SkillMetadata;
   content: string;
@@ -49,18 +32,12 @@ export interface Skill {
   supportingFiles?: string[];
 }
 
-/**
- * File structure entry for project templates
- */
 export interface FileStructure {
   path: string;
   content: string;
   type: 'file' | 'directory';
 }
 
-/**
- * Template for creating new projects with skills
- */
 export interface ProjectTemplate {
   name: string;
   description: string;
@@ -69,32 +46,20 @@ export interface ProjectTemplate {
   structure: FileStructure[];
 }
 
-/**
- * Options for skill installation
- */
 export interface InstallOptions {
   location: 'project' | 'user';
   cwd?: string;
 }
 
-/**
- * Options for creating a skills library instance
- */
 export interface SkillsLibraryOptions {
   cwd?: string;
 }
 
-/**
- * Result of parsing frontmatter from SKILL.md
- */
 export interface ParsedFrontmatter {
   frontmatter: SkillMetadata;
   body: string;
 }
 
-/**
- * Main skills library interface
- */
 export interface SkillsLibrary {
   loadSkill(name: string): Promise<Skill>;
   listSkills(category?: SkillCategory): Promise<Skill[]>;

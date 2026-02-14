@@ -9,16 +9,11 @@ export type Confidence = 'high' | 'medium' | 'low';
  * serve similar purposes and only the best one should be recommended
  */
 export type SkillCategory =
-  | 'testing'
-  | 'security'
-  | 'framework'
-  | 'deployment'
-  | 'database'
-  | 'code-quality'
-  | 'refactoring'
-  | 'documentation'
-  | 'workflow'
-  | 'development';
+  | 'meta'
+  | 'audit'
+  | 'principles'
+  | 'habits'
+  | 'hot';
 
 /**
  * Category of detected technology

@@ -31,7 +31,7 @@ describe('add command', () => {
         `---
 name: ${skillName}
 description: Test skill for ${skillName}
-category: testing
+category: principles
 ---
 
 # ${skillName}
@@ -222,7 +222,7 @@ These notes should also remain.
           `---
 name: my-local-skill
 description: A skill that only exists in the source project
-category: testing
+category: principles
 ---
 
 # My Local Skill

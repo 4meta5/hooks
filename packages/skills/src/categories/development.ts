@@ -1,17 +1,17 @@
 import type { SkillCategory } from '../types.js';
 
 /**
- * Development category metadata
+ * Legacy category helper retained for API stability.
+ * Maps legacy "development" helper concepts to canonical "principles".
  */
-export const developmentCategory: SkillCategory = 'development';
+export const developmentCategory: SkillCategory = 'principles';
 
-/**
- * Skills that belong to the development category
- */
 export const developmentSkills = [
-  'code-review',
-  'refactoring',
-  'debugging'
+  'tdd',
+  'dogfood',
+  'model-router',
+  'rick-rubin',
+  'refactor-suggestions'
 ] as const;
 
 export type DevelopmentSkill = typeof developmentSkills[number];

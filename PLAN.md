@@ -161,6 +161,15 @@ Items explicitly deferred to focus on the core loop (scan → install → auto-e
 
 ## Completed
 
+### 2026-02-14
+
+**Category Simplification**
+- [x] Consolidated 13 skill categories into 5: `meta`, `audit`, `principles`, `habits`, `hot`
+- [x] Updated all type definitions, tests, curated sources, and matcher logic
+- [x] Renamed curated skills: `differential-review` -> `diff-review`, `skill-maker` -> `make-skill`
+- [x] Trimmed verbose JSDoc comments from type definitions
+- [x] Released as v0.5.0
+
 ### 2026-02-05
 
 **Codebase Audit: Fix Broken References and Failing Tests**

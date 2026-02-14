@@ -20,7 +20,7 @@ describe('shared/markdown module', () => {
       const content = `---
 name: test-skill
 description: A test skill
-category: testing
+category: principles
 ---
 
 # Test Content
@@ -32,7 +32,7 @@ Some body text.`;
       expect(result.frontmatter).toEqual({
         name: 'test-skill',
         description: 'A test skill',
-        category: 'testing'
+        category: 'principles'
       });
       expect(result.body).toBe('# Test Content\n\nSome body text.');
     });
@@ -224,11 +224,11 @@ name: skill
 
 # Body`;
 
-      const result = updateFrontmatter(content, { category: 'testing', version: '1.0.0' });
+      const result = updateFrontmatter(content, { category: 'principles', version: '1.0.0' });
 
       const parsed = parseMarkdownFrontmatter(result);
       expect(parsed.frontmatter.name).toBe('skill');
-      expect(parsed.frontmatter.category).toBe('testing');
+      expect(parsed.frontmatter.category).toBe('principles');
       expect(parsed.frontmatter.version).toBe('1.0.0');
     });
 

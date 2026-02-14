@@ -24,7 +24,7 @@ This is the body.`;
     const content = `---
 name: complete-skill
 description: A complete skill
-category: testing
+category: principles
 disable-model-invocation: true
 user-invocable: false
 allowed-tools: Read, Write, Bash
@@ -38,7 +38,7 @@ Content here.`;
 
     expect(result.frontmatter.name).toBe('complete-skill');
     expect(result.frontmatter.description).toBe('A complete skill');
-    expect(result.frontmatter.category).toBe('testing');
+    expect(result.frontmatter.category).toBe('principles');
     expect(result.frontmatter['disable-model-invocation']).toBe(true);
     expect(result.frontmatter['user-invocable']).toBe(false);
     expect(result.frontmatter['allowed-tools']).toBe('Read, Write, Bash');
@@ -272,13 +272,13 @@ describe('formatSkillMd', () => {
       {
         name: 'full-skill',
         description: 'A full skill',
-        category: 'testing',
+        category: 'principles',
         'user-invocable': true
       },
       'Body'
     );
 
-    expect(content).toContain('category: testing');
+    expect(content).toContain('category: principles');
     expect(content).toContain('user-invocable: true');
   });
 

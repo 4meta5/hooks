@@ -37,14 +37,14 @@ export const CURATED_SOURCES: CuratedSource[] = [
       'tdd',
       'code-review-ts',
       'code-review-rust',
-      'differential-review',
+      'diff-review',
       'refactor-suggestions',
       'repo-hygiene',
       'rick-rubin',
       'dogfood',
-      'skill-maker'
+      'make-skill'
     ],
-    category: 'development',
+    category: 'principles',
     priority: 100
   },
 
@@ -60,7 +60,7 @@ export const CURATED_SOURCES: CuratedSource[] = [
     description: 'Svelte 5 runes and reactivity patterns',
     tags: ['svelte', 'svelte5', 'sveltekit', 'runes'],
     skills: ['svelte-runes'],
-    category: 'framework',
+    category: 'hot',
     priority: 10  // Primary Svelte 5 skill
   },
 
@@ -74,7 +74,7 @@ export const CURATED_SOURCES: CuratedSource[] = [
     description: 'AWS CDK, Lambda, ECS, SAM, and cost estimation skills',
     tags: ['aws', 'cdk', 'lambda', 'sam', 'ecs', 'infrastructure', 'iac'],
     skills: ['aws-cdk', 'aws-lambda', 'aws-sam', 'aws-ecs', 'aws-cost'],
-    category: 'deployment',
+    category: 'hot',
     priority: 10
   },
 
@@ -96,7 +96,7 @@ export const CURATED_SOURCES: CuratedSource[] = [
       'cloudflare-pages',
       'cloudflare-queues'
     ],
-    category: 'deployment',
+    category: 'hot',
     priority: 10
   },
 
@@ -111,7 +111,7 @@ export const CURATED_SOURCES: CuratedSource[] = [
     description: 'Neon Postgres, Drizzle ORM, and database integration skills',
     tags: ['neon', 'postgres', 'postgresql', 'drizzle', 'database', 'serverless'],
     skills: ['neon-vercel-postgres', 'drizzle-orm'],
-    category: 'database',
+    category: 'hot',
     priority: 10
   }
 ];

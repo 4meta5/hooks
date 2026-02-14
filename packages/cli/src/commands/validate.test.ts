@@ -28,7 +28,7 @@ name: valid-skill
 description: |
   A well-formed skill with proper description that explains what it does.
   Use when you need to validate skill formatting and ensure quality.
-category: testing
+category: principles
 ---
 
 # Valid Skill
@@ -191,7 +191,7 @@ category: invalid-category
         `---
 name: good-category
 description: A skill with a valid category for testing purposes
-category: testing
+category: principles
 ---
 
 # Skill
@@ -213,7 +213,7 @@ category: testing
         `---
 name: legacy-category
 description: Use when validating compatibility with legacy category values
-category: workflow
+category: habits
 ---
 
 # Skill
@@ -443,7 +443,7 @@ See [reference](references/guide.md) for more details.
         `---
 name: valid-skill
 description: A properly formatted skill with good description
-category: testing
+category: principles
 ---
 
 # Valid Skill
@@ -498,7 +498,7 @@ description: The specific skill we want to validate
         `---
 name: standalone-skill
 description: A standalone skill with no .claude/skills directory
-category: testing
+category: principles
 ---
 
 # Standalone Skill
