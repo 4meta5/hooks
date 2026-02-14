@@ -75,6 +75,33 @@ description: Prevents manual workarounds when building tools
       expect(triggers.triggerPatterns).toContain('Building tools');
       expect(triggers.triggerPatterns).toContain('CLI features');
     });
+
+    it('should parse unquoted description values that contain colons', async () => {
+      const skillDir = join(skillsDir, 'colon-description');
+      await mkdir(skillDir, { recursive: true });
+
+      await writeFile(join(skillDir, 'SKILL.md'), `---
+name: colon-description
+description: Comprehensive test-driven development: TDD workflow, test suggestions from diff,
+test generation, and property-based testing.
+category: principles
+---
+
+# Colon Description
+
+## When to Use
+
+- Fixing parser regressions
+- Validating malformed frontmatter recovery
+`);
+
+      const { extractSkillTriggers } = await import('./evaluate.js');
+      const triggers = await extractSkillTriggers(join(skillDir, 'SKILL.md'));
+
+      expect(triggers.skillName).toBe('colon-description');
+      expect(triggers.description).toContain('Comprehensive test-driven development: TDD workflow');
+      expect(triggers.triggerPatterns).toContain('Fixing parser regressions');
+    });
   });
 
   describe('discoverInstalledSkills', () => {
@@ -136,6 +163,30 @@ description: Valid skill
 
       expect(skills).toHaveLength(1);
       expect(skills[0].skillName).toBe('valid');
+    });
+
+    it('should not drop skills when frontmatter has unquoted colons in description', async () => {
+      const skillDir = join(skillsDir, 'recover-colon-frontmatter');
+      await mkdir(skillDir, { recursive: true });
+
+      await writeFile(join(skillDir, 'SKILL.md'), `---
+name: recover-colon-frontmatter
+description: Deploy and operate Svelte 5 + SvelteKit projects: safely and reliably.
+Use when adding server routes, configuring adapters, and debugging.
+category: hot
+---
+
+# Recover Frontmatter
+
+## When to Use
+
+- Ensure evaluate command finds installed skills
+`);
+
+      const { discoverInstalledSkills } = await import('./evaluate.js');
+      const skills = await discoverInstalledSkills(skillsDir);
+
+      expect(skills.map(s => s.skillName)).toContain('recover-colon-frontmatter');
     });
 
   });

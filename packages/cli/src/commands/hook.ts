@@ -123,6 +123,7 @@ SKILLS_CLI=""
 for cmd in \\
   "\${CLAUDE_PROJECT_DIR}/packages/skills-cli/bin/skills.js" \\
   "\${CLAUDE_PROJECT_DIR}/node_modules/.bin/skills" \\
+  "\${CLAUDE_PROJECT_DIR}/../hooks/packages/cli/bin/skills.js" \\
   "$(which skills 2>/dev/null)" \\
   "\${HOME}/.npm-global/bin/skills"
 do
@@ -136,9 +137,9 @@ done
 if [ -n "$SKILLS_CLI" ]; then
   # Run skills evaluate for dynamic skill list
   if [[ "$SKILLS_CLI" == *.js ]]; then
-    node "$SKILLS_CLI" evaluate --cwd "\${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null && exit 0
+    node "$SKILLS_CLI" evaluate --skills-dir "\${CLAUDE_PROJECT_DIR:-.}/.claude/skills" 2>/dev/null && exit 0
   else
-    "$SKILLS_CLI" evaluate --cwd "\${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null && exit 0
+    "$SKILLS_CLI" evaluate --skills-dir "\${CLAUDE_PROJECT_DIR:-.}/.claude/skills" 2>/dev/null && exit 0
   fi
 fi
 

@@ -163,6 +163,12 @@ Items explicitly deferred to focus on the core loop (scan → install → auto-e
 
 ### 2026-02-14
 
+**v0.5.1 Bugfix Release**
+- [x] Added robust fallback frontmatter parser in evaluate command
+- [x] Fixed hook script to use `--skills-dir` flag
+- [x] Published all packages to npm
+- [x] Added release/publish workflow to CLAUDE.md
+
 **Category Simplification**
 - [x] Consolidated 13 skill categories into 5: `meta`, `audit`, `principles`, `habits`, `hot`
 - [x] Updated all type definitions, tests, curated sources, and matcher logic

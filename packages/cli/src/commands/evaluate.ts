@@ -41,6 +41,60 @@ export interface EvaluateResult {
   prompt: string;
 }
 
+function stripOptionalQuotes(value: string): string {
+  const trimmed = value.trim();
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith('\'') && trimmed.endsWith('\''))
+  ) {
+    return trimmed.slice(1, -1).trim();
+  }
+  return trimmed;
+}
+
+/**
+ * Recover essential frontmatter fields from imperfect YAML.
+ * Some real SKILL.md files contain unquoted colons in description values.
+ */
+function parseFrontmatterLoosely(rawFrontmatter: string): Record<string, unknown> {
+  const lines = rawFrontmatter.split(/\r?\n/);
+  const frontmatter: Record<string, unknown> = {};
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    const nameMatch = line.match(/^name:\s*(.+)$/);
+    if (nameMatch && !frontmatter.name) {
+      frontmatter.name = stripOptionalQuotes(nameMatch[1]);
+      continue;
+    }
+
+    const descriptionMatch = line.match(/^description:\s*(.*)$/);
+    if (descriptionMatch && !frontmatter.description) {
+      const firstPart = descriptionMatch[1];
+      const descriptionLines: string[] = [];
+
+      if (firstPart.trim().length > 0 && firstPart.trim() !== '|') {
+        descriptionLines.push(firstPart.trim());
+      }
+
+      for (let j = i + 1; j < lines.length; j++) {
+        const next = lines[j];
+        if (/^[a-zA-Z0-9_-]+:\s*/.test(next)) {
+          break;
+        }
+        if (next.trim().length > 0) {
+          descriptionLines.push(next.trim());
+        }
+      }
+
+      frontmatter.description = descriptionLines.join(' ').trim();
+    }
+  }
+
+  return frontmatter;
+}
+
 /**
  * Extract trigger patterns from a SKILL.md file
  */
@@ -53,10 +107,19 @@ export async function extractSkillTriggers(skillMdPath: string): Promise<SkillTr
     throw new Error(`Invalid SKILL.md format: missing frontmatter in ${skillMdPath}`);
   }
 
-  const frontmatter = parseYaml(match[1]) as Record<string, unknown>;
+  const rawFrontmatter = match[1];
+  let frontmatter: Record<string, unknown>;
+  try {
+    frontmatter = parseYaml(rawFrontmatter) as Record<string, unknown>;
+  } catch {
+    frontmatter = parseFrontmatterLoosely(rawFrontmatter);
+  }
   const body = match[2];
 
-  const skillName = frontmatter.name as string;
+  const skillName = String(frontmatter.name || '').trim();
+  if (!skillName) {
+    throw new Error(`Invalid SKILL.md format: missing name in frontmatter for ${skillMdPath}`);
+  }
   let description = '';
   if (typeof frontmatter.description === 'string') {
     description = frontmatter.description;
@@ -204,12 +267,12 @@ Only after Step 2 is complete, proceed with implementation.
 \`\`\`
 SKILL EVALUATION (Step 1):
 - tdd: YES - fixing a bug in the CLI
-- no-workarounds: YES - fixing CLI tool code
-- dogfood-skills: NO - not completing a feature yet
+- diff-review: YES - reviewing a security-sensitive PR
+- model-router: NO - model tier already selected by user
 
 ACTIVATING SKILLS (Step 2):
 [Calls Skill("tdd")]
-[Calls Skill("no-workarounds")]
+[Calls Skill("diff-review")]
 
 IMPLEMENTING (Step 3):
 [Now proceeds with implementation following both activated skills]
@@ -218,8 +281,7 @@ IMPLEMENTING (Step 3):
 ## BLOCKING CONDITIONS - NO EXCEPTIONS
 
 - If tdd = YES: You are BLOCKED until Phase 1 (RED) is complete - failing test required
-- If no-workarounds = YES: You are BLOCKED from manual workarounds
-- Skills CHAIN: If both tdd AND no-workarounds are YES, follow BOTH
+- Skills CHAIN: If multiple skills are YES, follow ALL activated skills
 
 ## NO EXCEPTIONS
 
