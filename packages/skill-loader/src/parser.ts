@@ -4,7 +4,7 @@ import { SKILL_CATEGORIES, type SkillMetadata, type ParsedFrontmatter, type Skil
 /**
  * Type guard to check if a value is a valid SkillCategory
  */
-function isValidCategory(value: unknown): value is SkillCategory {
+export function isValidCategory(value: unknown): value is SkillCategory {
   return typeof value === 'string' && SKILL_CATEGORIES.includes(value as SkillCategory);
 }
 
@@ -34,12 +34,7 @@ function validateFrontmatter(parsed: unknown): SkillMetadata {
     throw new Error('Invalid SKILL.md: "description" field must be a string');
   }
 
-  // Validate optional category if present
-  if (obj.category !== undefined && !isValidCategory(obj.category)) {
-    throw new Error(
-      `Invalid SKILL.md: invalid category "${obj.category}". Must be one of: ${SKILL_CATEGORIES.join(', ')}`
-    );
-  }
+  // Drop unknown categories silently (older skills may use legacy values)
 
   // Build validated metadata object
   const metadata: SkillMetadata = {
@@ -48,7 +43,7 @@ function validateFrontmatter(parsed: unknown): SkillMetadata {
   };
 
   // Add optional fields if they exist and are valid
-  if (obj.category !== undefined) {
+  if (obj.category !== undefined && isValidCategory(obj.category)) {
     metadata.category = obj.category as SkillCategory;
   }
   if (typeof obj['disable-model-invocation'] === 'boolean') {

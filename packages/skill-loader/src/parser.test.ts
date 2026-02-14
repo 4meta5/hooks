@@ -243,7 +243,7 @@ Body`;
     expect(result.frontmatter.tools).toBeUndefined();
   });
 
-  it('should throw on invalid category value', () => {
+  it('should accept unknown category values without throwing', () => {
     const content = `---
 name: valid-name
 description: Valid description
@@ -252,7 +252,24 @@ category: not-a-valid-category
 
 Body`;
 
-    expect(() => parseFrontmatter(content)).toThrow(/invalid.*category/i);
+    const result = parseFrontmatter(content);
+    expect(result.frontmatter.name).toBe('valid-name');
+    // Unknown category should be dropped, not cause a crash
+    expect(result.frontmatter.category).toBeUndefined();
+  });
+
+  it('should accept legacy category values from older skills', () => {
+    const content = `---
+name: legacy-skill
+description: A skill with old category
+category: testing
+---
+
+Body`;
+
+    const result = parseFrontmatter(content);
+    expect(result.frontmatter.name).toBe('legacy-skill');
+    expect(result.frontmatter.category).toBeUndefined();
   });
 
   it('should accept all supported categories', () => {

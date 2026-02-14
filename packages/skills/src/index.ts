@@ -9,7 +9,8 @@ export {
   discoverSupportingFiles,
 } from '@4meta5/skill-loader';
 
-// Types
+// Types and constants
+export { SKILL_CATEGORIES } from './types.js';
 export type {
   Skill,
   SkillMetadata,

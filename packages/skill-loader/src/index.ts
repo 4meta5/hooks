@@ -29,8 +29,10 @@ export type {
   LoadOptions
 } from './types.js';
 
+export { SKILL_CATEGORIES } from './types.js';
+
 // Parser
-export { parseFrontmatter, formatSkillMd } from './parser.js';
+export { parseFrontmatter, formatSkillMd, isValidCategory } from './parser.js';
 
 // Loader
 export {

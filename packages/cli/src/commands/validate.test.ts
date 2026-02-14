@@ -161,7 +161,7 @@ No trigger conditions mentioned.
       )).toBe(true);
     });
 
-    it('should fail when category is invalid', async () => {
+    it('should warn when category is unknown', async () => {
       const skillDir = join(tempDir, '.claude', 'skills', 'bad-category');
       await mkdir(skillDir, { recursive: true });
       await writeFile(
@@ -179,8 +179,8 @@ category: invalid-category
 
       const result = await validateSkill(skillDir);
 
-      expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.includes('category'))).toBe(true);
+      expect(result.valid).toBe(true);
+      expect(result.warnings.some(w => w.includes('category'))).toBe(true);
     });
 
     it('should pass when category is valid', async () => {

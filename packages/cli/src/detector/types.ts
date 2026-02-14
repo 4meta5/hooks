@@ -8,12 +8,7 @@ export type Confidence = 'high' | 'medium' | 'low';
  * Used for functional deduplication - skills in the same category
  * serve similar purposes and only the best one should be recommended
  */
-export type SkillCategory =
-  | 'meta'
-  | 'audit'
-  | 'principles'
-  | 'habits'
-  | 'hot';
+export type { SkillCategory } from '@4meta5/skill-loader';
 
 /**
  * Category of detected technology

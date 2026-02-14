@@ -12,6 +12,7 @@ import { mkdir, writeFile, rm, readFile } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { createSkillsLibrary } from './library.js';
+import { SKILL_CATEGORIES } from './types.js';
 import type { Skill, SkillCategory } from './types.js';
 
 // Custom arbitraries
@@ -23,7 +24,7 @@ const descriptionArb = fc.stringMatching(/^[A-Za-z][A-Za-z0-9]{4,20}$/)
 
 // Body content: simple alphanumeric
 const bodyContentArb = fc.stringMatching(/^[a-z0-9]{0,50}$/);
-const categoryArb = fc.constantFrom<SkillCategory>('meta', 'audit', 'principles', 'habits', 'hot');
+const categoryArb = fc.constantFrom<SkillCategory>(...SKILL_CATEGORIES);
 
 // Generate valid skill data
 const skillDataArb = fc.record({

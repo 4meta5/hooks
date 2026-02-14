@@ -1,6 +1,6 @@
 import { readdir, readFile, stat } from 'fs/promises';
 import { join, basename, isAbsolute } from 'path';
-import { parseFrontmatter, type SkillMetadata } from '@4meta5/skill-loader';
+import { parseFrontmatter, isValidCategory, type SkillMetadata } from '@4meta5/skill-loader';
 import { parse as parseYaml } from 'yaml';
 
 /**
@@ -225,6 +225,15 @@ export async function validateSkill(skillPath: string): Promise<ValidationResult
       skillName,
       path: skillPath
     };
+  }
+
+  // Check for unknown category in the raw content
+  const categoryMatch = content.match(/^category:\s*(.+)$/m);
+  if (categoryMatch) {
+    const rawCategory = categoryMatch[1].trim();
+    if (!isValidCategory(rawCategory)) {
+      warnings.push(`Unknown category "${rawCategory}". Valid categories: meta, audit, principles, habits, hot.`);
+    }
   }
 
   // Quality checks for description

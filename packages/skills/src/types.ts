@@ -1,36 +1,7 @@
-/**
- * Canonical supported skill categories.
- * Keep aligned with @4meta5/skill-loader parser validation.
- */
-export const SKILL_CATEGORIES = [
-  'meta',
-  'audit',
-  'principles',
-  'habits',
-  'hot'
-] as const;
+import type { SkillCategory, Skill } from '@4meta5/skill-loader';
 
-export type SkillCategory = typeof SKILL_CATEGORIES[number];
-
-export interface SkillMetadata {
-  name: string;
-  description: string;
-  category?: SkillCategory;
-  'disable-model-invocation'?: boolean;
-  'user-invocable'?: boolean;
-  'allowed-tools'?: string;
-  context?: 'fork' | 'inline';
-  agent?: string;
-  tools?: string;
-  extensions?: string;
-}
-
-export interface Skill {
-  metadata: SkillMetadata;
-  content: string;
-  path: string;
-  supportingFiles?: string[];
-}
+export { SKILL_CATEGORIES } from '@4meta5/skill-loader';
+export type { SkillCategory, SkillMetadata, Skill, ParsedFrontmatter } from '@4meta5/skill-loader';
 
 export interface FileStructure {
   path: string;
@@ -53,11 +24,6 @@ export interface InstallOptions {
 
 export interface SkillsLibraryOptions {
   cwd?: string;
-}
-
-export interface ParsedFrontmatter {
-  frontmatter: SkillMetadata;
-  body: string;
 }
 
 export interface SkillsLibrary {
