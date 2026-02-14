@@ -27,6 +27,7 @@ interface ListOptions {
   custom?: boolean;
   upstream?: boolean;
   provenance?: boolean;
+  cwd?: string;
 }
 
 interface AddOptions {
@@ -128,6 +129,7 @@ const cli = cac('skills');
 cli
   .command('list', 'List available skills')
   .alias('ls')
+  .option('-C, --cwd <path>', 'Target project directory (default: current directory)')
   .option('-c, --category <category>', 'Filter by category')
   .option('--json', 'Output as JSON')
   .option('-r, --remote', 'List skills from remote sources')

@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.2] - 2026-02-14
+
+### Fixed
+
+Bugs introduced by scope creep in v0.5.1 (Claude Code added a duplicate frontmatter parser in evaluate.ts instead of fixing the shared one, and ignored the broken `list` command instead of fixing it).
+
+- Unified frontmatter parsing: tolerant YAML recovery now lives in `@4meta5/skill-loader` parser (single source of truth), not duplicated in evaluate command
+- Removed 71 lines of duplicate parser from `evaluate.ts`, replaced with `parseFrontmatter` import from `@4meta5/skill-loader`
+- Fixed `skills list` command: was ignoring working directory, now accepts `-C/--cwd` option and passes it to `createSkillsLibrary`
+- CLI test script now prebuilds `@4meta5/skill-loader` so cross-package parser changes are tested locally without publishing
+- Added regression tests for unquoted-colon frontmatter in both skill-loader parser and loader
+- Added regression test for `list --cwd` option
+
 ## [0.5.1] - 2026-02-14
 
 ### Fixed

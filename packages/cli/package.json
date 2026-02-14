@@ -1,6 +1,6 @@
 {
   "name": "@4meta5/skills-cli",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "CLI for managing Claude Code skills",
   "type": "module",
   "main": "dist/src/index.js",
@@ -14,8 +14,8 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "test": "npm run build -w @4meta5/skill-loader && vitest run",
+    "test:watch": "npm run build -w @4meta5/skill-loader && vitest",
     "typecheck": "tsc --noEmit",
     "generate-embeddings": "npx tsx scripts/generate-embeddings.ts",
     "prepublishOnly": "npm run build && npm run generate-embeddings"

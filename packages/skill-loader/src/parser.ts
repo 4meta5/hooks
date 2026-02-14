@@ -79,6 +79,76 @@ function validateFrontmatter(parsed: unknown): SkillMetadata {
   return metadata;
 }
 
+function stripOptionalQuotes(value: string): string {
+  const trimmed = value.trim();
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith('\'') && trimmed.endsWith('\''))
+  ) {
+    return trimmed.slice(1, -1).trim();
+  }
+  return trimmed;
+}
+
+/**
+ * Recover essential frontmatter fields from imperfect YAML.
+ * Some SKILL.md files use unquoted colons in description values.
+ */
+function parseFrontmatterLoosely(rawFrontmatter: string): Record<string, unknown> {
+  const lines = rawFrontmatter.split(/\r?\n/);
+  const frontmatter: Record<string, unknown> = {};
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    const fieldMatch = line.match(/^([a-zA-Z0-9_-]+):\s*(.*)$/);
+    if (!fieldMatch) {
+      continue;
+    }
+
+    const key = fieldMatch[1];
+    const rawValue = fieldMatch[2];
+
+    if (key === 'description' && !frontmatter.description) {
+      const descriptionLines: string[] = [];
+
+      if (rawValue.trim().length > 0 && rawValue.trim() !== '|') {
+        descriptionLines.push(rawValue.trim());
+      }
+
+      let stopAt = i + 1;
+      for (let j = i + 1; j < lines.length; j++) {
+        const next = lines[j];
+        if (/^[a-zA-Z0-9_-]+:\s*/.test(next)) {
+          stopAt = j;
+          break;
+        }
+        if (next.trim().length > 0) {
+          descriptionLines.push(next.trim());
+        }
+        stopAt = j + 1;
+      }
+
+      frontmatter.description = descriptionLines.join(' ').trim();
+      i = stopAt - 1;
+      continue;
+    }
+
+    if (!frontmatter[key]) {
+      const normalized = stripOptionalQuotes(rawValue);
+      if (normalized === 'true') {
+        frontmatter[key] = true;
+      } else if (normalized === 'false') {
+        frontmatter[key] = false;
+      } else {
+        frontmatter[key] = normalized;
+      }
+    }
+  }
+
+  return frontmatter;
+}
+
 /**
  * Parse YAML frontmatter from SKILL.md content
  *
@@ -108,7 +178,12 @@ export function parseFrontmatter(content: string): ParsedFrontmatter {
     throw new Error('Invalid SKILL.md format: missing frontmatter delimiters');
   }
 
-  const parsed = parseYaml(match[1]);
+  let parsed: unknown;
+  try {
+    parsed = parseYaml(match[1]);
+  } catch {
+    parsed = parseFrontmatterLoosely(match[1]);
+  }
   const frontmatter = validateFrontmatter(parsed);
 
   return {

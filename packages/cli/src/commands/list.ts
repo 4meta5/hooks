@@ -11,6 +11,7 @@ interface ListOptions {
   custom?: boolean;  // List only custom skills (provenance type: custom or no provenance)
   upstream?: boolean; // List only upstream skills (provenance type: git)
   provenance?: boolean; // Show provenance type for each skill
+  cwd?: string; // Target project directory
 }
 
 export async function listCommand(options: ListOptions = {}): Promise<void> {
@@ -24,7 +25,7 @@ export async function listCommand(options: ListOptions = {}): Promise<void> {
     return;
   }
 
-  const library = createSkillsLibrary();
+  const library = createSkillsLibrary({ cwd: options.cwd || process.cwd() });
   const category = options.category as SkillCategory | undefined;
 
   let skills = await library.listSkills(category);
@@ -127,7 +128,7 @@ async function listRemoteCommand(options: ListOptions): Promise<void> {
 }
 
 async function listAllCommand(options: ListOptions): Promise<void> {
-  const library = createSkillsLibrary();
+  const library = createSkillsLibrary({ cwd: options.cwd || process.cwd() });
   const category = options.category as SkillCategory | undefined;
 
   // Get local skills

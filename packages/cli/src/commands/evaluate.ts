@@ -10,7 +10,7 @@
 
 import { readdir, readFile, stat } from 'fs/promises';
 import { join } from 'path';
-import { parse as parseYaml } from 'yaml';
+import { parseFrontmatter } from '@4meta5/skill-loader';
 
 /**
  * Extracted skill trigger information
@@ -41,91 +41,14 @@ export interface EvaluateResult {
   prompt: string;
 }
 
-function stripOptionalQuotes(value: string): string {
-  const trimmed = value.trim();
-  if (
-    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
-    (trimmed.startsWith('\'') && trimmed.endsWith('\''))
-  ) {
-    return trimmed.slice(1, -1).trim();
-  }
-  return trimmed;
-}
-
-/**
- * Recover essential frontmatter fields from imperfect YAML.
- * Some real SKILL.md files contain unquoted colons in description values.
- */
-function parseFrontmatterLoosely(rawFrontmatter: string): Record<string, unknown> {
-  const lines = rawFrontmatter.split(/\r?\n/);
-  const frontmatter: Record<string, unknown> = {};
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-
-    const nameMatch = line.match(/^name:\s*(.+)$/);
-    if (nameMatch && !frontmatter.name) {
-      frontmatter.name = stripOptionalQuotes(nameMatch[1]);
-      continue;
-    }
-
-    const descriptionMatch = line.match(/^description:\s*(.*)$/);
-    if (descriptionMatch && !frontmatter.description) {
-      const firstPart = descriptionMatch[1];
-      const descriptionLines: string[] = [];
-
-      if (firstPart.trim().length > 0 && firstPart.trim() !== '|') {
-        descriptionLines.push(firstPart.trim());
-      }
-
-      for (let j = i + 1; j < lines.length; j++) {
-        const next = lines[j];
-        if (/^[a-zA-Z0-9_-]+:\s*/.test(next)) {
-          break;
-        }
-        if (next.trim().length > 0) {
-          descriptionLines.push(next.trim());
-        }
-      }
-
-      frontmatter.description = descriptionLines.join(' ').trim();
-    }
-  }
-
-  return frontmatter;
-}
-
 /**
  * Extract trigger patterns from a SKILL.md file
  */
 export async function extractSkillTriggers(skillMdPath: string): Promise<SkillTriggerInfo> {
   const content = await readFile(skillMdPath, 'utf-8');
-
-  // Parse frontmatter
-  const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
-  if (!match) {
-    throw new Error(`Invalid SKILL.md format: missing frontmatter in ${skillMdPath}`);
-  }
-
-  const rawFrontmatter = match[1];
-  let frontmatter: Record<string, unknown>;
-  try {
-    frontmatter = parseYaml(rawFrontmatter) as Record<string, unknown>;
-  } catch {
-    frontmatter = parseFrontmatterLoosely(rawFrontmatter);
-  }
-  const body = match[2];
-
-  const skillName = String(frontmatter.name || '').trim();
-  if (!skillName) {
-    throw new Error(`Invalid SKILL.md format: missing name in frontmatter for ${skillMdPath}`);
-  }
-  let description = '';
-  if (typeof frontmatter.description === 'string') {
-    description = frontmatter.description;
-  } else if (frontmatter.description) {
-    description = String(frontmatter.description).trim();
-  }
+  const { frontmatter, body } = parseFrontmatter(content);
+  const skillName = frontmatter.name;
+  const description = frontmatter.description;
 
   // Extract trigger patterns from various section types
   const triggerPatterns: string[] = [];

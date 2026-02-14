@@ -163,6 +163,14 @@ Items explicitly deferred to focus on the core loop (scan → install → auto-e
 
 ### 2026-02-14
 
+**v0.5.2 Scope Creep Cleanup**
+- [x] Unified frontmatter parsing in skill-loader (single source of truth)
+- [x] Removed duplicate parser from evaluate.ts (-71 lines)
+- [x] Fixed `skills list` to respect cwd (was broken, ignored in v0.5.1)
+- [x] Added `-C/--cwd` option to list command
+- [x] CLI tests prebuild skill-loader for cross-package testing
+- [x] Regression tests for unquoted-colon frontmatter and list --cwd
+
 **v0.5.1 Bugfix Release**
 - [x] Added robust fallback frontmatter parser in evaluate command
 - [x] Fixed hook script to use `--skills-dir` flag

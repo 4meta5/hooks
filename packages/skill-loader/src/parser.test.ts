@@ -103,6 +103,23 @@ Body content.`;
     expect(result.frontmatter.description).toContain('multiline');
     expect(result.frontmatter.description).toContain('multiple lines');
   });
+
+  it('handles unquoted colons in description values', () => {
+    const content = `---
+name: colon-desc
+description: Comprehensive test-driven development: TDD workflow, test suggestions from diff,
+test generation, and property-based testing.
+category: principles
+---
+
+Body content.`;
+
+    const result = parseFrontmatter(content);
+
+    expect(result.frontmatter.name).toBe('colon-desc');
+    expect(result.frontmatter.description).toContain('Comprehensive test-driven development: TDD workflow');
+    expect(result.frontmatter.category).toBe('principles');
+  });
 });
 
 describe('parseFrontmatter - type safety', () => {

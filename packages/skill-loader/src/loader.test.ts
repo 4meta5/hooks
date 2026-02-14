@@ -160,6 +160,23 @@ Content 2`);
     expect(skills.map(s => s.metadata.name)).toContain('skill-two');
   });
 
+  it('loads skills with unquoted colon descriptions', async () => {
+    await mkdir(join(tempDir, 'colon-skill'));
+    await writeFile(join(tempDir, 'colon-skill', 'SKILL.md'), `---
+name: colon-skill
+description: Deploy and operate Svelte 5 + SvelteKit projects: safely and reliably.
+Use when adding server routes, configuring adapters, and debugging.
+---
+
+Content`);
+
+    const skills = await loadSkillsFromDirectory(tempDir);
+
+    expect(skills).toHaveLength(1);
+    expect(skills[0].metadata.name).toBe('colon-skill');
+    expect(skills[0].metadata.description).toContain('Svelte 5 + SvelteKit');
+  });
+
   it('skips invalid skill directories', async () => {
     // Valid skill
     await mkdir(join(tempDir, 'valid-skill'));
