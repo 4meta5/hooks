@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { parseGitUrl, extractSourceName, copySkillFromSource, type DiscoveredSkill } from './git.js';
+import { parseGitUrl, extractSourceName, copySkillFromSource, cloneOrUpdateSource, type DiscoveredSkill } from './git.js';
 import { readProvenance } from './provenance.js';
 import { mkdir, rm, writeFile, readdir, stat } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import * as configModule from './config.js';
+import { simpleGit } from 'simple-git';
 
 describe('parseGitUrl', () => {
   describe('basic URLs', () => {
@@ -189,5 +190,55 @@ describe('copySkillFromSource', () => {
     expect(provenance?.source.type).toBe('git');
     expect(provenance?.source.url).toBe('https://github.com/user/repo');
     expect(provenance?.source.ref).toBe('main');
+  });
+});
+
+describe('cloneOrUpdateSource', () => {
+  let tempDir: string;
+  let cacheDir: string;
+  let remoteDir: string;
+
+  beforeEach(async () => {
+    tempDir = join(tmpdir(), `skills-clone-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    cacheDir = join(tempDir, 'cache');
+    remoteDir = join(tempDir, 'remote');
+    await mkdir(cacheDir, { recursive: true });
+    await mkdir(remoteDir, { recursive: true });
+    vi.spyOn(configModule, 'getSourcesCacheDir').mockReturnValue(cacheDir);
+  });
+
+  afterEach(async () => {
+    await rm(tempDir, { recursive: true, force: true });
+    vi.restoreAllMocks();
+  });
+
+  it('replaces an existing non-git cache directory and supports repeated syncs', async () => {
+    const remoteGit = simpleGit(remoteDir);
+    await remoteGit.init();
+    await remoteGit.addConfig('user.name', 'skills-test');
+    await remoteGit.addConfig('user.email', 'skills-test@example.com');
+    await writeFile(join(remoteDir, 'README.md'), '# test', 'utf-8');
+    await remoteGit.add('.');
+    await remoteGit.commit('init');
+    const branch = (await remoteGit.revparse(['--abbrev-ref', 'HEAD'])).trim();
+
+    const sourceName = 'sync-source';
+    const staleCachePath = join(cacheDir, sourceName);
+    await mkdir(staleCachePath, { recursive: true });
+    await writeFile(join(staleCachePath, 'stale.txt'), 'stale', 'utf-8');
+
+    const source = {
+      name: sourceName,
+      url: remoteDir,
+      ref: branch,
+      type: 'git' as const
+    };
+
+    const first = await cloneOrUpdateSource(source);
+    expect(first).toBe(staleCachePath);
+    expect((await stat(join(staleCachePath, '.git'))).isDirectory()).toBe(true);
+
+    const second = await cloneOrUpdateSource(source);
+    expect(second).toBe(staleCachePath);
   });
 });

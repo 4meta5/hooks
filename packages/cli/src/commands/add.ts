@@ -2,7 +2,7 @@ import { createSkillsLibrary, loadSkillFromPath } from '@4meta5/skills';
 import { updateClaudeMd } from '../claudemd.js';
 import type { Skill } from '@4meta5/skills';
 import { selectSkills } from '../interactive.js';
-import { getDefaults, trackInstalledSkill, getSource, getSources, trackProjectInstallation } from '../config.js';
+import { getDefaults, trackInstalledSkill, getSource, getSources, trackProjectInstallation, getSourcesCacheDir } from '../config.js';
 import {
   parseGitUrl,
   extractSourceName,
@@ -13,8 +13,9 @@ import {
   getSourceCommit
 } from '../git.js';
 import { parseSkillRef, loadRemoteSkill, resolveSkillRef } from '../registry.js';
-import { join } from 'path';
+import { basename, join } from 'path';
 import { homedir } from 'os';
+import { mkdtemp } from 'fs/promises';
 import { isSlop } from './hygiene.js';
 import { assertTestSafeProjectPath } from '../test/guard.js';
 
@@ -213,10 +214,11 @@ async function installFromGitUrl(
 ): Promise<void> {
   const parsed = parseGitUrl(url);
   const sourceName = extractSourceName(parsed.url);
+  const tempSourceDir = await mkdtemp(join(getSourcesCacheDir(), `_temp_${sourceName}_`));
 
   // Create a temporary source
   const source = {
-    name: `_temp_${sourceName}`,
+    name: basename(tempSourceDir),
     url: parsed.url,
     path: parsed.path,
     ref: options.ref || parsed.ref,
